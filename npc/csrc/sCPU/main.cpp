@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 	reset(10);
 	
 	int delay = 0;
-	const int SPEED_LIMIT = 10000000;
+	const int SPEED_LIMIT = 100000000;
 	while (1) {
 		nvboard_update();
 		if(++delay >= SPEED_LIMIT){
