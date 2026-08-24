@@ -13,7 +13,7 @@ always @(*) begin
 		8'd0: instruction = 8'h8a;
 		8'd1:	instruction = 8'h90;
 		8'd2: instruction =	8'ha0;
-		8'd3: instruction = 8'b1;
+		8'd3: instruction = 8'hb1;
 		8'd4: instruction = 8'h17;
 		8'd5: instruction = 8'h29;
 		8'd6: instruction = 8'hd1;
