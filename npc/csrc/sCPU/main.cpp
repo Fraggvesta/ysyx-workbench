@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <assert.h>
 #include <VsCPU.h>
 #include <verilated.h>
@@ -42,10 +41,15 @@ int main(int argc, char** argv) {
 	nvboard_init();
 
 	reset(10);
+	
+	int delay = 0;
+	const int SPEED_LIMIT = 1000000;
 	while (1) {
 		nvboard_update();
-		single_cycle();
-		usleep(200000);
+		if(++delay >= SPEED_LIMIT){
+			single_cycle();
+			delay = 0;
+		}
 	}
 
 	tfp->close();
