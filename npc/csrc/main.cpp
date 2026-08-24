@@ -7,33 +7,28 @@
 #include <verilated.h>
 #include <verilated_fst_c.h>
 
-int main(int argc, char** argv){
-   Verilated::commandArgs(argc, argv);
-   Vtop* top = new Vtop; 
-   Verilated::traceEverOn(true);
-   VerilatedFstC* tfp = new VerilatedFstC;
-   top->trace(tfp, 99);
-   tfp->open("sim_dump.fst");
-   vluint64_t main_time = 0;
+static TOP_NAME top;
+void nvboard_bind_all_pins(Vtop* top);
 
-   int i = 0;  
+int main(int argc, char** argv){
+	
+	Verilated::commandArgs(argc, argv);
+  Verilated::traceEverOn(true);
+  VerilatedFstC* tfp = new VerilatedFstC;
+  top->trace(tfp, 99);
+  tfp->open("sim_dump.fst");
+  
+	nvboard_bind_all_pins(&top);
+	nvboard_init();
+	vluint64_t main_time = 0;
+	
+  int i = 0;  
    while(i < 100){
-     int a = rand() & 1;
-     int b = rand() & 1;
-     top->a = a;
-     top->b = b;
-     top->eval();
-     tfp->dump(main_time);
-     tfp->flush();
-     main_time++;
-     printf("a = %d, b = %d, f = %d\n", a, b, top->f);
-     assert(top->f == (a ^ b));
-     i++;
+     nvboard_update();
+		 top.eval();
+		 tfp->dump(main_time++);
    }
    tfp->close();
-   top->final();
-   delete top;
-   delete tfp;
-   
+   nvboard_quit();
    return 0;
 }
