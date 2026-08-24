@@ -16,10 +16,18 @@ void single_cycle(){
 	top.clk = 0;
 	top.eval();
 	tfp->dump(main_time++);
-	
+	if (main_time < 100000) {
+		tfp->dump(main_time++);
+	}
+
+
 	top.clk = 1;
 	top.eval();
-	tfp->dump(main_time++);
+
+	if(main_time < 100000){
+		tfp->dump(main_time);
+		tfp->flush();
+	}
 }
 
 void reset(int n){
