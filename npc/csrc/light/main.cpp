@@ -3,11 +3,11 @@
 #include <assert.h>                                                                                                                                                                                     
 #include <Vlight.h>			
 #include <verilated.h>
-#include <verilated_fst_c.h>                                                                                                                                                                            
+#include <verilated_vcd_c.h>                                                                                                                                                                            
 #include <nvboard.h>
 
 static TOP_NAME top;
-static VerilatedFstC* tfp = NULL;
+static VerilatedVcdC* tfp = NULL;
 vluint64_t main_time = 0;
 
 void nvboard_bind_all_pins(Vlight* top);
@@ -16,10 +16,16 @@ void single_cycle(){
 	top.clk = 0;
 	top.eval();
 	tfp->dump(main_time++);
-	
+	if (main_time < 100000) {
+		tfp->dump(main_time++);
+	}
+
 	top.clk = 1;
 	top.eval();
-	tfp->dump(main_time++);
+	if(main_time < 100000){
+		tfp->dump(main_time);
+		tfp->flush();
+	}
 }
 
 void reset(int n){
@@ -31,9 +37,9 @@ void reset(int n){
 int main(int argc, char** argv){
 	Verilated::commandArgs(argc, argv);
 	Verilated::traceEverOn(true);
-	tfp = new VerilatedFstC;
+	tfp = new VerilatedVcdC;
 	top.trace(tfp,99);
-	tfp->open("sim_dump.fst");
+	tfp->open("build/light/sim_dump.vcd");
 	nvboard_bind_all_pins(&top);
 	nvboard_init();
 	vluint64_t time = 0;

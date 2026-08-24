@@ -1,10 +1,11 @@
-TOPNAME ?= light
+TOPNAME ?= sCPU
 NXDC_FILES = constr/$(TOPNAME).nxdc 
 INC_PATH ?=
 
 VERILATOR = verilator
-VERILATOR_CFLAGS += -MMD --build -cc --trace-fst \
-          -O3 --x-assign fast --x-initial fast --noassert
+VERILATOR_CFLAGS += -MMD --build -cc --trace \
+          -O3 --x-assign fast --x-initial fast --noassert \
+					-Wall -Wno-DECLFILENAME -Wno-UNUSED
 
 BUILD_DIR = ./build/$(TOPNAME)
 OBJ_DIR = $(BUILD_DIR)/obj_dir
@@ -42,7 +43,7 @@ run: $(BIN)
 				$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 				@$^
 
-WAVE_FILE = $(BUILD_DIR)/sim_dump.fst
+WAVE_FILE = $(BUILD_DIR)/sim_dump.vcd
 
 wave: $(WAVE_FILE)
 				gtkwave $(WAVE_FILE)
@@ -50,5 +51,9 @@ wave: $(WAVE_FILE)
 clean:
 			rm -rf $(BUILD_DIR) sim_dump.fst
 
-.PHONY: default all clean run wave
+lint:
+		$(VERILATOR) --lint-only -Wall -Wno-DECLFILENAME \
+				  --top-module $(TOPNAME) $(VSRCS)
+
+.PHONY: default all clean run wave lint
 include ../Makefile
