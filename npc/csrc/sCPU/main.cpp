@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <assert.h>
 #include <VsCPU.h>
 #include <verilated.h>
@@ -44,6 +45,7 @@ int main(int argc, char** argv) {
 	while (1) {
 		nvboard_update();
 		single_cycle();
+		usleep(200000);
 	}
 
 	tfp->close();
