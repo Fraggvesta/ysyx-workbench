@@ -6,6 +6,7 @@
 #include <Vtop.h>
 #include <verilated.h>
 #include <verilated_fst_c.h>
+#include <nvboard.h>
 
 static TOP_NAME top;
 void nvboard_bind_all_pins(Vtop* top);
@@ -15,7 +16,7 @@ int main(int argc, char** argv){
 	Verilated::commandArgs(argc, argv);
   Verilated::traceEverOn(true);
   VerilatedFstC* tfp = new VerilatedFstC;
-  top->trace(tfp, 99);
+  top.trace(tfp, 99);
   tfp->open("sim_dump.fst");
   
 	nvboard_bind_all_pins(&top);

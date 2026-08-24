@@ -38,15 +38,15 @@ $(BIN): $(VSRCS) $(CSRCS) $(NVBOARD_ARCHIVE)
 all: default
 	
 
-run:
-	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
-	@$^
+run: $(BIN)
+				$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
+				@$^
 
 wave: sim_dump.fst
 				gtkwave sim_dump.fst
 
 clean:
-			rm -rf obj_dir sim_dump.fst
+			rm -rf $(BUILD_DIR) sim_dump.fst
 
 .PHONY: default all clean run wave
 include ../Makefile
