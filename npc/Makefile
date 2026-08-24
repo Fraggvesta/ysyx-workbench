@@ -3,7 +3,7 @@ NXDC_FILES = constr/$(TOPNAME).nxdc
 INC_PATH ?=
 
 VERILATOR = verilator
-VERILATOR_CFLAGS += -MMD --build -cc --trace-fst \
+VERILATOR_CFLAGS += -MMD --build -cc --trace \
           -O3 --x-assign fast --x-initial fast --noassert
 
 BUILD_DIR = ./build/$(TOPNAME)
@@ -42,7 +42,7 @@ run: $(BIN)
 				$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 				@$^
 
-WAVE_FILE = $(BUILD_DIR)/sim_dump.fst
+WAVE_FILE = $(BUILD_DIR)/sim_dump.vcd
 
 wave: $(WAVE_FILE)
 				gtkwave $(WAVE_FILE)
