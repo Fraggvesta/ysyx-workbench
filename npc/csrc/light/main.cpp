@@ -33,7 +33,7 @@ int main(int argc, char** argv){
 	Verilated::traceEverOn(true);
 	tfp = new VerilatedFstC;
 	top.trace(tfp,99);
-	tfp->open("sim_dump.fst");
+	tfp->open("build/light/sim_dump.fst");
 	nvboard_bind_all_pins(&top);
 	nvboard_init();
 	vluint64_t time = 0;
