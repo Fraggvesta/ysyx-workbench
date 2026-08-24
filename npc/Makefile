@@ -10,11 +10,11 @@ all: sim
 
 sim:
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
-	@verilator $(VERILATOR_FLAGS) $(VSRCS) $(CSRCS)
-	@$(BIN)
+	verilator $(VERILATOR_FLAGS) $(VSRCS) $(CSRCS)
+	$(BIN)
 
 wave: sim_dump.fst
-				@gtkwave sim_dump.fst
+				gtkwave sim_dump.fst
 
 clean:
 			rm -rf obj_dir sim_dump.fst
