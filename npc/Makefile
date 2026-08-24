@@ -1,12 +1,12 @@
-TOPNAME = top
-NXDC_FILES = constr/top.nxdc 
+TOPNAME ?= light
+NXDC_FILES = constr/$(TOPNAME).nxdc 
 INC_PATH ?=
 
 VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc --trace-fst \
           -O3 --x-assign fast --x-initial fast --noassert
 
-BUILD_DIR = ./build
+BUILD_DIR = ./build/$(TOPNAME)
 OBJ_DIR = $(BUILD_DIR)/obj_dir
 BIN = $(BUILD_DIR)/$(TOPNAME)
 
@@ -19,8 +19,8 @@ SRC_AUTO_BIND = $(abspath $(BUILD_DIR)/auto_bind.cpp)
 $(SRC_AUTO_BIND): $(NXDC_FILES)
 	python3 $(NVBOARD_HOME)/scripts/auto_pin_bind.py $^ $@
 
-VSRCS = $(shell find $(abspath ./vsrc) -name "*.v")
-CSRCS = $(shell find $(abspath ./csrc) -name "*.c" -or -name "*.cc" -or -name "*.cpp")
+VSRCS = $(shell find $(abspath ./vsrc/$(TOPNAME)) -name "*.v")
+CSRCS = $(shell find $(abspath ./csrc/$(TOPNAME)) -name "*.c" -or -name "*.cc" -or -name "*.cpp")
 CSRCS += $(SRC_AUTO_BIND)
 
 include $(NVBOARD_HOME)/scripts/nvboard.mk
@@ -42,8 +42,10 @@ run: $(BIN)
 				$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 				@$^
 
-wave: sim_dump.fst
-				gtkwave sim_dump.fst
+WAVE_FILE = $(BUILD_DIR)/sim_dump.fst
+
+wave: $(WAVE_FILE)
+				gtkwave $(WAVE_FILE)
 
 clean:
 			rm -rf $(BUILD_DIR) sim_dump.fst
