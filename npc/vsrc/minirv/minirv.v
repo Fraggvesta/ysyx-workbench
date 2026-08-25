@@ -2,7 +2,9 @@ module minirv (
     input clk,
     input rst,
     input [31:0] inst,
-    output [31:0] pc
+    output [31:0] pc,
+		output [31:0] ra,
+		output [31:0] a0
 );
 
     wire [31:0] current_pc, next_pc, imm, rs1_data, rs2_data, alu_result, wb_data;
@@ -24,4 +26,6 @@ module minirv (
     exu obj_exu (rs1_data, rs2_data, imm, alu_sel, alu_result);
     wbu obj_wbu (current_pc, alu_result, imm, data_sel, pc_sel, next_pc, wb_data);
 
+		assign ra = rf[1];
+		assign a0 = rf[10];
 endmodule

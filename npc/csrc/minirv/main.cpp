@@ -4,7 +4,6 @@
 #include <Vminirv.h>
 #include <unistd.h>
 #include <verilated.h>
-#include <Vminirv___024root.h>
 #include <verilated_vcd_c.h>
 
 
@@ -48,8 +47,8 @@ void reset(int n) {
 int main(int argc, char** argv) {
 	Verilated::commandArgs(argc, argv);
 	Verilated::traceEverOn(true);
-	uint32_t ra = top.rootp->minirv__DOT__rf[1];
-	uint32_t a0 = top.rootp->minirv__DOT__rf[10];
+	uint32_t ra = top.ra;
+	uint32_t a0 = top.a0;
 	tfp = new VerilatedVcdC;
 	top.trace(tfp, 99);
 	tfp->open("sim_dump.vcd");
