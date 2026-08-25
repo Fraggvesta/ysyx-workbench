@@ -23,6 +23,9 @@ uint8_t* ref_get_regs(){
 	return R;
 }
 
+uint8_t ref_get_PC(){
+	return PC;
+}
 
 void ref_inst_cycle(){
 	uint8_t instr = M[PC];

@@ -10,6 +10,7 @@
 void ref_reset();
 void ref_inst_cycle();
 uint8_t* ref_get_regs();
+uint8_t ref_get_PC();
 
 static VsCPU top;
 static VerilatedVcdC* tfp = NULL;
@@ -38,8 +39,9 @@ void reset(int n) {
 int check_regs(uint8_t *dut_regs, uint8_t *ref_regs){
 	for(int i = 0; i < 4; i++){
 		if(dut_regs[i] != ref_regs[i]){
+			uint8_t curr_pc = ref_get_PC();
 			printf("Difftest Mismatch Detected\n");
-			printf("Register mismatch R[%d]\n", i);
+			printf("Register mismatch R[%d]\n at PC:%d", i, curr_pc);
 			return 1;
 		}
 	}
