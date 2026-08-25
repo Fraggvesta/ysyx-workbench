@@ -10,7 +10,7 @@ module minirv (
     wire [31:0] current_pc, next_pc, imm, rs1_data, rs2_data, alu_result, wb_data;
     wire [4:0] rs1, rs2, rd;
     wire we_reg, we_mem, pc_sel, alu_sel;
-		wire[1:0] data_sel;
+		wire data_sel;
     reg [31:0] rf [31:0];
 
     assign pc = current_pc;
@@ -24,7 +24,7 @@ module minirv (
     ifu obj_ifu (clk, rst, next_pc, current_pc);
     idu obj_idu (inst, imm, rs1, rs2, rd, we_reg, we_mem, pc_sel, alu_sel, data_sel);
     exu obj_exu (rs1_data, rs2_data, imm, alu_sel, alu_result);
-    wbu obj_wbu (current_pc, alu_result, imm, data_sel, pc_sel, next_pc, wb_data);
+    wbu obj_wbu (current_pc, alu_result, data_sel, pc_sel, next_pc, wb_data);
 
 		assign ra = rf[1];
 		assign a0 = rf[10];
