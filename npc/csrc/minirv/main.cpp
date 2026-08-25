@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
 	
 	reset(10);
 	while (1) {
-			printf("PC = 0x%08x | Inst = 0x%08x | ra = %d | a0 = %d\n", top.pc, top.inst, top.ra, top.a0);
+			printf("PC = 0x%08x | Inst = 0x%08x | ra = %08x | a0 = %08x\n", top.pc, top.inst, top.ra, top.a0);
 			single_cycle();
 			usleep(1000000);
 	}
