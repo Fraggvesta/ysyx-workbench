@@ -8,7 +8,8 @@ output reg we_reg,
 output reg we_mem,
 output reg pc_sel,
 output reg alu_sel,
-output reg data_sel
+output reg data_sel,
+output is_ebreak
 );
 
 wire [6:0] opcode = instr[6:0];
@@ -21,6 +22,7 @@ wire is_addi = (opcode == 7'd19) && (func == 3'd0);
 wire is_jalr = (opcode == 7'd103) && (func == 3'd0);
 wire is_add = (opcode == 7'd51) && (func == 3'd0);
 wire is_lui = (opcode == 7'd55);
+assign is_ebreak = (instr == 32'h00100073);
 
 always @(*) begin
 	rs1_out = 5'd0;

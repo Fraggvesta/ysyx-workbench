@@ -14,13 +14,18 @@ uint32_t pmem[16777216] = {
 0x00001537,
 0x00150533,
 0x001500b3,
-0x01000067,
+0x00100073,
 };
 uint64_t main_time = 0;
+bool sim_exit = false;
 
 uint32_t pmem_read(uint32_t addr){
 	uint32_t word = addr >> 2;	
 	return pmem[word];
+}
+
+extern "C" void terminate(){
+	sim_exit = true;
 }
 
 void single_cycle() {
@@ -51,12 +56,13 @@ int main(int argc, char** argv) {
 	tfp->open("sim_dump.vcd");
 	
 	reset(10);
-	while (1) {
+	while (!sim_exit) {
 			printf("PC = 0x%08x | Inst = 0x%08x | ra = %08x | a0 = %08x\n", top.pc, top.inst, top.ra, top.a0);
 			single_cycle();
 			usleep(1000000);
 	}
-
+	
+	printf("Terminated due to ebreak\n");
 	tfp->close();
 	return 0;
 }
