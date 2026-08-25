@@ -45,7 +45,6 @@ always @(*) begin
 		imm = {{20{imm_i[11]}}, imm_i};
 		we_reg = 1'b1;
 		pc_sel = 1'b1;
-		alu_sel = 1'b1;
 		data_sel = 1'b1;
 	end else if(is_add) begin
 		rd_out = rd;
@@ -56,6 +55,7 @@ always @(*) begin
 		rd_out = rd;
 		imm = {imm_u, {12{1'b0}}};
 		alu_sel = 1'b1;
+		we_reg = 1'b1;
 	end
 end
 
