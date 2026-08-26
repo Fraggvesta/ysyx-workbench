@@ -62,7 +62,7 @@ always @(*) begin
 		we_reg = 1'b1;
 	end else if(is_lui) begin
 		rd_out = rd;
-		imm = {imm_u, {12{1'b0}}};
+		imm = {imm_u, 12'b0};
 		alu_sel = 1'b1;
 		we_reg = 1'b1;
 	end else if(is_lw || is_lbu) begin

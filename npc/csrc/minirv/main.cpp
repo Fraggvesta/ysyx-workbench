@@ -36,7 +36,7 @@ extern "C" int pmem_read(int addr){
 }
 
 extern "C" void pmem_write(int addr, int data, uint8_t mask){
-	uint8_t* byte = (uint8_t*)&pmem[addr >> 2];
+	uint8_t* byte = (uint8_t*)&pmem[(uint32_t)addr >> 2];
 	for(int i = 0; i < 4; i++){
 		if(mask & (1 << i)){
 			byte[i] = (data >> (i * 8)) & 0xFF;
@@ -74,8 +74,8 @@ int main(int argc, char** argv) {
 	tfp = new VerilatedVcdC;
 	top.trace(tfp, 99);
 	tfp->open("sim_dump.vcd");
-	reset(10);
 	init_memory();
+	reset(10);
 	while (!sim_exit) {
 		printf("PC = 0x%08x | Inst = 0x%08x | ra = %08x | a0 = %08x, | mem[0x40] = %08x | mem[0x44] = %08x | mem[0x48] = %08x\n", top.pc, pmem[top.pc >> 2], top.ra, top.a0, pmem[16],pmem[17],pmem[18]);
 		single_cycle();
