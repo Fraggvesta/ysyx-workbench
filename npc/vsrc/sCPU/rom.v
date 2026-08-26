@@ -10,7 +10,7 @@ reg[7:0] pc;
 
 always @(*) begin
 	case(pc)
-		8'd0: instruction = 8'h8a;
+		8'd0: instruction = 8'h89;
 		8'd1:	instruction = 8'h90;
 		8'd2: instruction =	8'ha0;
 		8'd3: instruction = 8'hb1;
