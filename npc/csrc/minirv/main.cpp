@@ -8,7 +8,7 @@
 #include <verilated_vcd_c.h>
 
 
-Vminirv top;
+Vminirv* top = NULL;
 VerilatedVcdC* tfp = NULL;
 
 uint32_t pmem[16777216];
@@ -32,10 +32,20 @@ uint64_t main_time = 0;
 bool sim_exit = false;
 
 extern "C" int pmem_read(int addr){
-	return pmem[addr >> 2];
+	uint32_t word = ((uint32_t)addr) >> 2;
+	if(word >= 16777216){
+		printf("accessing pmem out of bounds\n");
+		return 0;
+	}
+	return pmem[word];
 }
 
 extern "C" void pmem_write(int addr, int data, uint8_t mask){
+	uint32_t word = ((uint32_t)addr) >> 2;
+	if(word >= 16777216) {
+		printf("accessing pmem out of bounds\n");      
+		return;
+	}
 	uint8_t* byte = (uint8_t*)&pmem[(uint32_t)addr >> 2];
 	for(int i = 0; i < 4; i++){
 		if(mask & (1 << i)){
@@ -50,20 +60,20 @@ extern "C" void terminate(){
 
 
 void single_cycle() {
-	top.clk = 0;
-	top.eval();
+	top->clk = 0;
+	top->eval();
 	tfp->dump(main_time++);
 
-	top.clk = 1;
-	top.eval();
+	top->clk = 1;
+	top->eval();
 	tfp->dump(main_time++);
 	tfp->flush();
 }
 
 void reset(int n) {
-	top.rst = 1;
+	top->rst = 1;
 	while (n-- > 0) single_cycle();
-	top.rst = 0;
+	top->rst = 0;
 }
 
 
@@ -71,13 +81,14 @@ void reset(int n) {
 int main(int argc, char** argv) {
 	Verilated::commandArgs(argc, argv);
 	Verilated::traceEverOn(true);
+	top = new Vminirv;
 	tfp = new VerilatedVcdC;
-	top.trace(tfp, 99);
+	top->trace(tfp, 99);
 	tfp->open("sim_dump.vcd");
 	init_memory();
 	reset(10);
 	while (!sim_exit) {
-		printf("PC = 0x%08x | Inst = 0x%08x | ra = %08x | a0 = %08x, | mem[0x40] = %08x | mem[0x44] = %08x | mem[0x48] = %08x\n", top.pc, pmem[top.pc >> 2], top.ra, top.a0, pmem[16],pmem[17],pmem[18]);
+		printf("PC = 0x%08x | Inst = 0x%08x | ra = %08x | a0 = %08x, | mem[0x40] = %08x | mem[0x44] = %08x | mem[0x48] = %08x\n", top->pc, pmem[top->pc >> 2], top->ra, top->a0, pmem[16],pmem[17],pmem[18]);
 		single_cycle();
 		usleep(1000000);
 	}
