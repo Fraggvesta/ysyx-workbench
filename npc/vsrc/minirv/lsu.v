@@ -16,11 +16,12 @@ import "DPI-C" function void pmem_write(input int waddr, input int data, input b
 
 assign wmask = store_size ? (8'h01 << offset) : 8'h0f;
 
+reg[31:0] store_data = store_size ? {4{data_write[7:0]}} : data_write;
 assign data = pmem_read(addr);
 
 always @(posedge clk) begin
 	if(we_mem) begin
-		pmem_write(addr, data_write, wmask);
+		pmem_write(addr, store_data, wmask);
 	end
 end
 
