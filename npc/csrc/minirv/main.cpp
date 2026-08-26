@@ -26,7 +26,7 @@ pmem[9]  = 0x00100073; // 0x24: ebreak (skipped)
 pmem[10] = 0x00100073; // 0x28: ebreak (exit)
 
 pmem[16] = 0xDEADBEEF; // 0x40: Data word for LW
-pmem[16] = 0xDEADBEEF; // 0x40: Data word for LW
+pmem[17] = 0x0000007F; // 0x44: Data byte for LBU
 }
 uint64_t main_time = 0;
 bool sim_exit = false;
@@ -35,7 +35,7 @@ extern "C" int pmem_read(int addr){
 	return pmem[addr >> 2];
 }
 
-extern "C" void pmem_write(int addr, int data, int8_t mask){
+extern "C" void pmem_write(int addr, int data, uint8_t mask){
 	uint8_t* byte = (uint8_t*)&pmem[addr >> 2];
 	for(int i = 0; i < 4; i++){
 		if(mask & (1 << i)){
@@ -74,8 +74,8 @@ int main(int argc, char** argv) {
 	tfp = new VerilatedVcdC;
 	top.trace(tfp, 99);
 	tfp->open("sim_dump.vcd");
-	reset(10);
 	init_memory();
+	reset(10);
 	while (!sim_exit) {
 		printf("PC = 0x%08x | Inst = 0x%08x | ra = %08x | a0 = %08x, | mem[0x40] = %08x | mem[0x44] = %08x | mem[0x48] = %08x\n", top.pc, pmem[top.pc >> 2], top.ra, top.a0, pmem[16],pmem[17],pmem[18]);
 		single_cycle();

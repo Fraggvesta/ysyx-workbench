@@ -25,7 +25,7 @@ wire is_jalr = (opcode == 7'd103) && (funct == 3'd0);
 wire is_add = (opcode == 7'd51) && (funct == 3'd0);
 wire is_lui = (opcode == 7'd55);
 wire is_lw = (opcode == 7'd3) && (funct == 3'd2);
-wire is_lb = (opcode == 7'd3) && (funct == 3'd4);
+wire is_lbu = (opcode == 7'd3) && (funct == 3'd4);
 wire is_sw = (opcode == 7'd35) && (funct == 3'd2);
 wire is_sb = (opcode == 7'd35) && (funct == 3'd0);
 assign is_ebreak = (instr == 32'h00100073);
@@ -65,14 +65,14 @@ always @(*) begin
 		imm = {imm_u, {12{1'b0}}};
 		alu_sel = 1'b1;
 		we_reg = 1'b1;
-	end else if(is_lw || is_lb) begin
+	end else if(is_lw || is_lbu) begin
 		rd_out = rd;
 		rs1_out = rs1;
 		imm = {{20{imm_i[11]}}, imm_i};
 		alu_sel = 1'b1;
 		we_reg = 1'b1;
 		data_sel = 2'b10;
-		store_size = is_lb ? 1'b1 : 1'b0;
+		store_size = is_lbu ? 1'b1 : 1'b0;
 	end else if(is_sw || is_sb) begin
 		rs1_out = rs1;
 		rs2_out = rs2;
