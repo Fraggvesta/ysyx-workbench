@@ -1,6 +1,7 @@
 module lsu(
 input clk,
 input we_mem,
+input re_mem,
 input[31:0] addr,
 input[31:0] data_write,
 input store_size,
@@ -17,7 +18,7 @@ import "DPI-C" function void pmem_write(input int waddr, input int data, input b
 assign wmask = store_size ? (8'h01 << offset) : 8'h0f;
 
 wire[31:0] store_data = store_size ? {4{data_write[7:0]}} : data_write;
-assign data = pmem_read(addr);
+assign data = re_mem ?  pmem_read(addr) : 32'b0;
 
 always @(posedge clk) begin
 	if(we_mem) begin

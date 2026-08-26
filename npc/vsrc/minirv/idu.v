@@ -7,6 +7,7 @@ output reg [4:0] rd_out,
 output reg [2:0] funct,
 output reg we_reg,
 output reg we_mem,
+output reg re_mem,
 output reg pc_sel,
 output reg alu_sel,
 output reg[1:0] data_sel,
@@ -41,6 +42,7 @@ always @(*) begin
 	data_sel = 2'b00;
 	pc_sel = 1'b0;
 	store_size = 1'b0;
+	re_mem = 1'b0;
 	if(is_addi) begin
 		rd_out = rd;
 		rs1_out = rs1;
@@ -72,6 +74,7 @@ always @(*) begin
 		alu_sel = 1'b1;
 		we_reg = 1'b1;
 		data_sel = 2'b10;
+		re_mem = 1'b1;
 	end else if(is_sw || is_sb) begin
 		rs1_out = rs1;
 		rs2_out = rs2;
