@@ -1,4 +1,5 @@
 module lsu(
+input clk,
 input we_mem,
 input[31:0] addr,
 input[31:0] data_write,
@@ -14,12 +15,16 @@ import "DPI-C" function int pmem_read(input int raddr);
 import "DPI-C" function void pmem_write(input int waddr, input int data, input byte mask);
 
 assign wmask = store_size ? (8'h01 << offset) : 8'h0f;
+
 assign data = pmem_read(addr);
 
-always @(*) begin
-	if(we_mem) begin 
-	pmem_write(addr, data_write, wmask );
+always @(posedge clk) begin
+	if(we_mem) begin
+		pmem_write(addr, data_write, wmask);
 	end
+end
+
+always @(*) begin
 	
 	case(offset)
 	2'b00: data_byte = data[7:0]; 

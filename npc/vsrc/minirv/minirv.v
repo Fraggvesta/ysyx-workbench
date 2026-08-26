@@ -39,7 +39,7 @@ module minirv (
     idu obj_idu (instr, imm, rs1, rs2, rd, funct, we_reg, we_mem, pc_sel, alu_sel, data_sel, store_size, is_ebreak);
     exu obj_exu (rs1_data, rs2_data, imm, alu_sel, alu_result);
     wbu obj_wbu (current_pc, alu_result, data_mem, data_sel, pc_sel, next_pc, wb_data);
-		lsu obj_lsu (we_mem, alu_result, rs2_data, store_size, funct, data_mem);	
+		lsu obj_lsu (clk, we_mem, alu_result, rs2_data, store_size, funct, data_mem);	
 		assign ra = rf[1];
 		assign a0 = rf[10];
 endmodule
