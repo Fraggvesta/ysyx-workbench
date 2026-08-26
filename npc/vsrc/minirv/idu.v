@@ -72,7 +72,6 @@ always @(*) begin
 		alu_sel = 1'b1;
 		we_reg = 1'b1;
 		data_sel = 2'b10;
-		store_size = is_lbu ? 1'b1 : 1'b0;
 	end else if(is_sw || is_sb) begin
 		rs1_out = rs1;
 		rs2_out = rs2;
