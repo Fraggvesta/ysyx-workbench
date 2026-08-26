@@ -1,7 +1,8 @@
 module wbu(
 input [31:0] pc,
 input [31:0] data_alu,
-input data_sel,
+input [31:0] data_mem,
+input[1:0] data_sel,
 input pc_sel,
 output reg [31:0] pc_out,
 output reg [31:0] data_out
@@ -13,8 +14,9 @@ always @(*) begin
 	else pc_out = pc + 4;
 
 	case(data_sel)
-		1'b0: data_out = data_alu;
-		1'b1: data_out = pc + 4;
+		2'b00: data_out = data_alu;
+		2'b01: data_out = pc + 4;
+		2'b10: data_out = data_mem;
 		default: data_out = 32'd0;
 	endcase
 end

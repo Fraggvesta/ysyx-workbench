@@ -1,16 +1,16 @@
 module minirv (
     input clk,
     input rst,
-    input [31:0] inst,
     output [31:0] pc,
 		output [31:0] ra,
 		output [31:0] a0
 );
 
-		wire [31:0] current_pc, next_pc, imm, rs1_data, rs2_data, alu_result, wb_data;
+		wire [31:0] current_pc, next_pc, imm, rs1_data, rs2_data, alu_result, wb_data, data_mem, instr;
     wire [4:0] rs1, rs2, rd;
-    wire we_reg, we_mem, pc_sel, alu_sel, is_ebreak;
-		wire data_sel;
+    wire we_reg, we_mem, pc_sel, alu_sel, is_ebreak, store_size;
+		wire[1:0] data_sel;
+		wire[2:0] funct;
     reg [31:0] rf [31:0];
 
     assign pc = current_pc;
@@ -35,11 +35,11 @@ module minirv (
 
     
 	
-		ifu obj_ifu (clk, rst, next_pc, current_pc);
-    idu obj_idu (inst, imm, rs1, rs2, rd, we_reg, we_mem, pc_sel, alu_sel, data_sel, is_ebreak);
+		ifu obj_ifu (clk, rst, next_pc, current_pc, instr);
+    idu obj_idu (instr, imm, rs1, rs2, rd, funct, we_reg, we_mem, pc_sel, alu_sel, data_sel, store_size, is_ebreak);
     exu obj_exu (rs1_data, rs2_data, imm, alu_sel, alu_result);
-    wbu obj_wbu (current_pc, alu_result, data_sel, pc_sel, next_pc, wb_data);
-		
+    wbu obj_wbu (current_pc, alu_result, data_mem, data_sel, pc_sel, next_pc, wb_data);
+		lsu obj_lsu (we_mem, alu_result, rs2_data, store_size, funct, data_mem);	
 		assign ra = rf[1];
 		assign a0 = rf[10];
 endmodule

@@ -1,16 +1,20 @@
 module ifu(
 input clk,
 input rst,
-input[31:0] pc,
-output reg [31:0] pc_out
+input[31:0] next_pc,
+output reg [31:0] curr_pc,
+output reg [31:0] instr
 );
+
+import "DPI-C" function int pmem_read(input int raddr);
 
 always @(posedge clk) begin
 	if(rst) begin
-		pc_out <= 0;
+		curr_pc <= 0;
 	end else begin
-		pc_out <= pc;
+		curr_pc <= next_pc;
 	end
 end
 
+assign instr = pmem_read(curr_pc);
 endmodule
