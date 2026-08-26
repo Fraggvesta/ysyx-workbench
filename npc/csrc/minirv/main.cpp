@@ -74,8 +74,8 @@ int main(int argc, char** argv) {
 	tfp = new VerilatedVcdC;
 	top.trace(tfp, 99);
 	tfp->open("sim_dump.vcd");
-	init_memory();
 	reset(10);
+	init_memory();
 	while (!sim_exit) {
 		printf("PC = 0x%08x | Inst = 0x%08x | ra = %08x | a0 = %08x, | mem[0x40] = %08x | mem[0x44] = %08x | mem[0x48] = %08x\n", top.pc, pmem[top.pc >> 2], top.ra, top.a0, pmem[16],pmem[17],pmem[18]);
 		single_cycle();
