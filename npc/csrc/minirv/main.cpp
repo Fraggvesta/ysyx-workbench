@@ -6,47 +6,35 @@
 #include <unistd.h>
 #include <verilated.h>
 #include <verilated_vcd_c.h>
-
+#define MEMBASE 0x80000000
+#define	WORD_COUNT 33554432
+#define MEMSIZE (WORD_COUNT * 4)
 
 Vminirv* top = NULL;
 VerilatedVcdC* tfp = NULL;
 
-uint32_t pmem[16777216];
-void init_memory(){
-pmem[0]  = 0x12345537; // 0x00: lui   a0, 0x12345
-pmem[1]  = 0x67850513; // 0x04: addi  a0, a0, 0x678
-pmem[2]  = 0x04000313; // 0x08: addi  t1, x0, 0x40
-pmem[3]  = 0x00032383; // 0x0C: lw    t2, 0(t1)
-pmem[4]  = 0x00434e03; // 0x10: lbu   t3, 4(t1)
-pmem[5]  = 0x01c38533; // 0x14: add   a0, t2, t3
-pmem[6]  = 0x00a32423; // 0x18: sw    a0, 8(t1)
-pmem[7]  = 0x02800e93; // 0x1C: addi  t4, x0, 0x28
-pmem[8]  = 0x000e80e7; // 0x20: jalr  ra, 0(t4)
-pmem[9]  = 0x00100073; // 0x24: ebreak (skipped)
-pmem[10] = 0x00100073; // 0x28: ebreak (exit)
-
-pmem[16] = 0xDEADBEEF; // 0x40: Data word for LW
-pmem[17] = 0x0000007F; // 0x44: Data byte for LBU
-}
+uint32_t pmem[WORD_COUNT];
 uint64_t main_time = 0;
 bool sim_exit = false;
 
 extern "C" int pmem_read(int addr){
-	uint32_t word = ((uint32_t)addr) >> 2;
-	if(word >= 16777216){
+	uint32_t relative_addr = ((uint32_t)addr - MEMBASE) >> 2;
+	if(relative_addr >= WORD_COUNT){
+		printf("accessing pmem out of bounds: addr = 0x%08x\n", addr);
 		printf("accessing pmem out of bounds\n");
 		return 0;
 	}
-	return pmem[word];
+	return pmem[relative_addr];
 }
 
 extern "C" void pmem_write(int addr, int data, uint8_t mask){
-	uint32_t word = ((uint32_t)addr) >> 2;
-	if(word >= 16777216) {
+	uint32_t relative_addr = ((uint32_t)addr - MEMBASE) >> 2; 
+	if(relative_addr >= WORD_COUNT) {
+		printf("accessing pmem out of bounds: addr = 0x%08x\n", addr);
 		printf("accessing pmem out of bounds\n");      
 		return;
 	}
-	uint8_t* byte = (uint8_t*)&pmem[(uint32_t)addr >> 2];
+	uint8_t* byte = (uint8_t*)&pmem[relative_addr];
 	for(int i = 0; i < 4; i++){
 		if(mask & (1 << i)){
 			byte[i] = (data >> (i * 8)) & 0xFF;
@@ -76,25 +64,46 @@ void reset(int n) {
 	top->rst = 0;
 }
 
+void load_program(const char* program_file){
+	if(!program_file) return;
+	FILE *fp = fopen(program_file, "rb");
+	assert(fp && "Failed to open binary program file");
+	fseek(fp, 0, SEEK_END);
+	long size = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+	assert(size <= MEMSIZE && "program is >128MB");
+	size_t ret = fread(pmem, size, 1, fp);
+	fclose(fp);
+	printf("File successfully loaded\n");
+}
 
 
 int main(int argc, char** argv) {
 	Verilated::commandArgs(argc, argv);
+	if(argc > 1){
+		load_program(argv[1]);
+	}
+
 	Verilated::traceEverOn(true);
 	top = new Vminirv;
 	tfp = new VerilatedVcdC;
 	top->trace(tfp, 99);
 	tfp->open("sim_dump.vcd");
-	init_memory();
 	reset(10);
 	while (!sim_exit) {
-		printf("PC = 0x%08x | Inst = 0x%08x | ra = %08x | a0 = %08x, | mem[0x40] = %08x | mem[0x44] = %08x | mem[0x48] = %08x\n", top->pc, pmem[top->pc >> 2], top->ra, top->a0, pmem[16],pmem[17],pmem[18]);
 		single_cycle();
-		usleep(1000000);
 	}
-	
+	if (top->a0 == 0) {
+		printf("\033[1;32mHIT GOOD TRAP\033[0m\n");
+	} 
+	else 
+	{
+		printf("\033[1;31mHIT BAD TRAP (code = %d)\033[0m\n", top->a0);
+	}	
 	printf("Terminated due to ebreak\n");
+	int return_code = top->a0 == 0 ? 0 : 1;
+	delete top;
 	tfp->close();
-	return 0;
+	return return_code;
 }
 

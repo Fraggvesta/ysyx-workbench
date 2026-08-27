@@ -10,11 +10,11 @@ import "DPI-C" function int pmem_read(input int raddr);
 
 always @(posedge clk) begin
 	if(rst) begin
-		curr_pc <= 0;
+		curr_pc <= 32'h80000000;
 	end else begin
 		curr_pc <= next_pc;
 	end
 end
 
-assign instr = pmem_read(curr_pc);
+assign instr = rst ? 32'h0 :pmem_read(curr_pc);
 endmodule
