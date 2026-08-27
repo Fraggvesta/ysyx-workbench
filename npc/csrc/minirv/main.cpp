@@ -6,9 +6,10 @@
 #include <unistd.h>
 #include <verilated.h>
 #include <verilated_vcd_c.h>
-#define MEMBASE 0x80000000
-#define	WORD_COUNT 33554432
-#define MEMSIZE (WORD_COUNT * 4)
+#include <Vminirv___024root.h>
+#include "svdpi.h"
+#include "minirvEMU.h"
+
 
 Vminirv* top = NULL;
 VerilatedVcdC* tfp = NULL;
@@ -28,6 +29,11 @@ extern "C" int pmem_read(int addr){
 }
 
 extern "C" void pmem_write(int addr, int data, uint8_t mask){
+	if (addr == 0x10000000) {  // write to UART
+    fputc(data & 0xff, stderr);   // defined in stdio.h
+    return;
+  }
+	
 	uint32_t relative_addr = ((uint32_t)addr - MEMBASE) >> 2; 
 	if(relative_addr >= WORD_COUNT) {
 		printf("accessing pmem out of bounds: addr = 0x%08x\n", addr);
@@ -46,7 +52,6 @@ extern "C" void terminate(){
 	sim_exit = true;
 }
 
-
 void single_cycle() {
 	top->clk = 0;
 	top->eval();
@@ -60,7 +65,10 @@ void single_cycle() {
 
 void reset(int n) {
 	top->rst = 1;
-	while (n-- > 0) single_cycle();
+	while (n-- > 0){
+		single_cycle();
+		ref_reset();
+	}
 	top->rst = 0;
 }
 
@@ -70,11 +78,29 @@ void load_program(const char* program_file){
 	assert(fp && "Failed to open binary program file");
 	fseek(fp, 0, SEEK_END);
 	long size = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
 	assert(size <= MEMSIZE && "program is >128MB");
-	size_t ret = fread(pmem, size, 1, fp);
+	
+	fseek(fp, 0, SEEK_SET);
+	fread(M, size, 1, fp);
+	fseek(fp, 0, SEEK_SET);
+	fread(pmem, size, 1, fp);
 	fclose(fp);
 	printf("File successfully loaded\n");
+}
+
+bool check_regs(const uint32_t* ref_regs, const uint32_t* dut_gpr){
+	if (!dut_gpr) {
+			printf("Error: dut_gpr pointer is NULL!\n");
+		return true;
+	}
+
+	for(int i = 0; i < 32; i++){
+		if(ref_regs[i] != dut_gpr[i]){
+			printf("Register value at %d is not equal\n", i);
+			return true;
+		}
+	}
+	return false;
 }
 
 
@@ -87,10 +113,19 @@ int main(int argc, char** argv) {
 	Verilated::traceEverOn(true);
 	top = new Vminirv;
 	tfp = new VerilatedVcdC;
+	const uint32_t* dut_gpr = top->rootp->minirv__DOT__rf.data();
 	top->trace(tfp, 99);
 	tfp->open("sim_dump.vcd");
 	reset(10);
 	while (!sim_exit) {
+		if(check_regs(R, dut_gpr) || pc != top->pc){
+			printf("Difftest failed, PC_ref = %d | PC_dut = %d\n", pc, top->pc);
+			sim_exit = true;
+			return 1;
+		}
+		ref_inst_cycle();
+		
+		
 		single_cycle();
 	}
 	if (top->a0 == 0) {

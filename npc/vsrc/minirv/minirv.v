@@ -11,13 +11,13 @@ module minirv (
     wire we_reg, we_mem, re_mem, pc_sel, alu_sel, is_ebreak, store_size;
 		wire[1:0] data_sel;
 		wire[2:0] funct;
-    reg [31:0] rf [31:0];
+    reg [31:0] rf [31:0] /* verilator public_flat_rd */;
 
     assign pc = current_pc;
     assign rs1_data = (rs1 == 5'd0) ? 32'd0 : rf[rs1];
     assign rs2_data = (rs2 == 5'd0) ? 32'd0 : rf[rs2];
 		import "DPI-C" function void terminate();
-		
+
 	  always @(posedge clk) begin
 			if(rst) begin
 				for(int i = 0; i < 32; i++) begin
@@ -32,8 +32,6 @@ module minirv (
 			end
 		end
 
-
-    
 	
 		ifu obj_ifu (clk, rst, next_pc, current_pc, instr);
     idu obj_idu (instr, imm, rs1, rs2, rd, funct, we_reg, we_mem, re_mem, pc_sel, alu_sel, data_sel, store_size, is_ebreak);
