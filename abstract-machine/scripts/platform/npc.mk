@@ -26,6 +26,7 @@ image: image-dep
 	@$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -O binary $(IMAGE).elf $(IMAGE).bin
 
 run: insert-arg
+	$(MAKE) -C $(NPC_HOME)
 	$(NPC_HOME)/build/minirv/minirv $(IMAGE).bin
 
 .PHONY: insert-arg

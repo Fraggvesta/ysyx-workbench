@@ -1,4 +1,4 @@
-TOPNAME ?=  minirv
+TOPNAME ?=  sim_top
 INC_PATH ?=
 
 VERILATOR = verilator
