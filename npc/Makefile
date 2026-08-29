@@ -1,4 +1,5 @@
-TOPNAME ?=  minirv
+TOPNAME ?= sim_top
+NAME ?= minirv
 INC_PATH ?=
 
 VERILATOR = verilator
@@ -6,9 +7,9 @@ VERILATOR_CFLAGS += -MMD --build -cc --trace \
                     -O3 --x-assign fast --x-initial fast --noassert \
                     -Wall -Wno-DECLFILENAME -Wno-UNUSED
 
-BUILD_DIR = ./build/$(TOPNAME)
+BUILD_DIR = ./build/$(NAME)
 OBJ_DIR = $(BUILD_DIR)/obj_dir
-BIN = $(BUILD_DIR)/$(TOPNAME)
+BIN = $(BUILD_DIR)/$(NAME)
 
 default: $(BIN)
 
