@@ -1,15 +1,18 @@
 module minirv (
     input clk,
     input rst,
-		input[31:0] imem_data,
-		input[31:0] dmem_rdata,
-		
-		output[31:0] imem_addr,
-		output[31:0] dmem_addr,
-		output[31:0] dmem_wdata,
-		output[3:0] dmem_wmask,
-		output dmem_we,
-		output dmem_re,
+		input ifu_respValid,
+		input[31:0] ifu_rdata,
+		input lsu_respValid,
+		input[31:0] lsu_rdata,
+
+		output ifu_reqValid,
+		output[31:0] ifu_addr,
+		output lsu_reqValid,
+		output[31:0] lsu_addr,
+		output lsu_wen,
+		output[31:0] lsu_wdata,
+		output[3:0] lsu_wmask,
 
 		output [31:0] pc,
 		output [31:0] ra,
@@ -42,10 +45,14 @@ module minirv (
 
 		ifu obj_ifu (
         .clk(clk), .rst(rst),
-        .next_pc(next_pc), .imem_data(imem_data),
-        .curr_pc(current_pc), .is_valid(is_valid),
-        .imem_addr(imem_addr), .instr(instr), .re_mem(re_mem), .mem_req(mem_req)
+        .re_mem(re_mem), .we_mem(we_mem),
+        .next_pc(next_pc),
+        .ifu_reqValid(ifu_reqValid), .ifu_addr(ifu_addr),
+        .ifu_respValid(ifu_respValid), .ifu_rdata(ifu_rdata),
+        .mem_req(mem_req), .lsu_respValid(lsu_respValid),
+        .curr_pc(current_pc), .is_valid(is_valid), .instr(instr)
     );
+
  
     idu obj_idu (
         .instr(instr),
@@ -60,12 +67,13 @@ module minirv (
         .alu_sel(alu_sel), .result(alu_result)
     );
  
-    lsu obj_lsu (
+		lsu obj_lsu (
         .we_mem(we_mem), .re_mem(re_mem), .mem_req(mem_req),
         .addr(alu_result), .data_write(rs2_data),
-        .store_size(store_size), .funct(funct), .dmem_rdata(dmem_rdata),
-        .dmem_addr(dmem_addr), .dmem_wdata(dmem_wdata),
-        .dmem_wmask(dmem_wmask), .dmem_we(dmem_we), .dmem_re(dmem_re),
+        .store_size(store_size), .funct(funct),
+        .lsu_reqValid(lsu_reqValid), .lsu_addr(lsu_addr),
+        .lsu_wen(lsu_wen), .lsu_wdata(lsu_wdata), .lsu_wmask(lsu_wmask),
+        .lsu_rdata(lsu_rdata),
         .data_mem(data_mem)
     );
  

@@ -9,34 +9,41 @@ output ebreak,
 output is_valid
 );
 
-wire [31:0] ifu_raddr, ifu_rdata, dmem_addr, dmem_wdata, dmem_rdata;
-wire [3:0] dmem_wmask;
-wire dmem_we, dmem_re;
+wire ifu_reqValid, ifu_respValid;
+wire [31:0] ifu_addr, ifu_rdata;
+wire lsu_reqValid, lsu_respValid, lsu_wen;
+wire [31:0] lsu_addr, lsu_wdata, lsu_rdata;
+wire [3:0] lsu_wmask;
 
 minirv cpu (
 	.clk(clk), .rst(rst),
-	.imem_data(ifu_rdata),
-	.dmem_rdata(dmem_rdata),
-	.imem_addr(ifu_raddr),
-	.dmem_addr(dmem_addr),
-	.dmem_wdata(dmem_wdata),
-	.dmem_wmask(dmem_wmask),
-	.dmem_we(dmem_we),
-	.dmem_re(dmem_re),
+	.ifu_reqValid(ifu_reqValid),
+ 	.ifu_addr(ifu_addr),
+	.ifu_respValid(ifu_respValid), 
+	.ifu_rdata(ifu_rdata),
+	.lsu_reqValid(lsu_reqValid),
+ 	.lsu_addr(lsu_addr),
+	.lsu_wen(lsu_wen),
+ 	.lsu_wdata(lsu_wdata),
+ 	.lsu_wmask(lsu_wmask),
+	.lsu_respValid(lsu_respValid),
+ 	.lsu_rdata(lsu_rdata),	
 	.pc(pc), .ra(ra), .a0(a0),
 	.ebreak(ebreak), .is_valid(is_valid)
 );
 
 mem pmem (
-	.clk(clk),
-	.lsu_addr(dmem_addr),
-	.lsu_ren(dmem_re),
-	.lsu_wen(dmem_we),
-	.lsu_wdata(dmem_wdata),
-	.lsu_wmask(dmem_wmask),
-	.lsu_rdata(dmem_rdata),
-	.ifu_rdata(ifu_rdata),
-	.ifu_addr(ifu_raddr)
+	.clk(clk), .rst(rst),
+	.ifu_reqValid(ifu_reqValid),
+ 	.ifu_addr(ifu_addr),
+	.ifu_respValid(ifu_respValid),
+ 	.ifu_rdata(ifu_rdata),
+	.lsu_reqValid(lsu_reqValid),
+ 	.lsu_addr(lsu_addr),
+	.lsu_wen(lsu_wen),
+ 	.lsu_wdata(lsu_wdata),
+ 	.lsu_wmask(lsu_wmask),
+	.lsu_respValid(lsu_respValid),
+ 	.lsu_rdata(lsu_rdata)
 );
-
 endmodule
