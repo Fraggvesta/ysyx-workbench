@@ -2,23 +2,24 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
-#include <Vsim_top.h>
+#include <VSimTop.h>
 #include <unistd.h>
 #include <verilated.h>
 #include <verilated_vcd_c.h>
-#include <Vsim_top___024root.h>
+#include <VSimTop___024root.h>
 #include "svdpi.h"
 #include "minirvEMU.h"
 #include <sys/time.h>
+#define CPU_(x) top->rootp->SimTop__DOT__asic__DOT__soc__DOT__cpu__DOT__core0__DOT__##x
 
-Vsim_top* top = NULL;
+VSimTop* top = NULL;
 //VerilatedVcdC* tfp = NULL;
 
 uint32_t pmem[WORD_COUNT];
 uint64_t main_time = 0;
 bool sim_exit = false;
 uint32_t uart_status = 0;
-uint64_t cycle_count = 0;
+uint64_t cycle_count = 0, instr_count = 0;
 uint32_t timer_lo = 0, timer_hi = 0;
 
 uint64_t get_time(){
@@ -49,7 +50,9 @@ extern "C" int pmem_read(int addr){
 	return pmem[relative_addr];
 }
 
-void pmem_write(int addr, int data, uint8_t mask){
+extern "C" void flash_read(int32_t addr, int32_t *data) { assert(0); }
+
+extern "C" void pmem_write(int addr, int data, uint8_t mask){
 	if (addr == 0x10000000) {  // write to UART
     fputc(data & 0xff, stderr);   // defined in stdio.h
     return;
@@ -71,18 +74,16 @@ void pmem_write(int addr, int data, uint8_t mask){
 
 void single_cycle() {
 	cycle_count++;
-	top->clk = 0;
+	top->clock = 0;
+	top->cpuClock = 0;
 	top->eval();
 //	tfp->dump(main_time++);
 	
-	if(top->dmem_re) top->dmem_rdata = pmem_read(top->dmem_addr);
-
+	bool is_ebreak = CPU_(ebreak);	
+	top->clock = 1;
+	top->cpuClock = 1;
 	top->eval();
-	if(top->dmem_we) pmem_write(top->dmem_addr, top->dmem_wdata, top->dmem_wmask);
 
-	bool is_ebreak = top->ebreak;	
-	top->clk = 1;
-	top->eval();
 //	tfp->dump(main_time++);
 //	tfp->flush();
 //
@@ -90,12 +91,12 @@ void single_cycle() {
 }
 
 void reset(int n) {
-	top->rst = 1;
+	top->reset = 1;
 	while (n-- > 0){
 		single_cycle();
 	}
 	ref_reset();
-	top->rst = 0;
+	top->reset = 0;
 }
 
 void load_program(const char* program_file){
@@ -137,33 +138,37 @@ int main(int argc, char** argv) {
 	}
 
 	//Verilated::traceEverOn(true);
-	top = new Vsim_top;
+	top = new VSimTop;
 	//tfp = new VerilatedVcdC;
-	const uint32_t* dut_gpr = top->rootp->sim_top__DOT__cpu__DOT__rf.data();
+	const uint32_t* dut_gpr = CPU_(rf).data();
 	//top->trace(tfp, 99);	
 	//tfp->open("sim_dump.vcd");
-	reset(10);
+	reset(100);
 	while (!sim_exit) {
-		bool check = top->is_valid;
+		bool check = CPU_(is_valid);
 		single_cycle();
 		if(check){
-			ref_inst_cycle();
-			if(check_regs(R, dut_gpr) || pc != top->pc){
-				printf("Difftest failed, PC_ref = %x | PC_dut = %x\n", pc, top->pc);
+			instr_count++;
+			if(!ref_inst_cycle()) break;
+			if(check_regs(R, dut_gpr) || pc != CPU_(pc)){
+				printf("Difftest failed, PC_ref = %x | PC_dut = %x\n", pc, CPU_(pc));
 				sim_exit = true;
 				return 1;
 			}
 		}
 	}
-	if (top->a0 == 0) {
+	if (CPU_(a0) == 0) {
 		printf("\033[1;32mHIT GOOD TRAP\033[0m\n");
 	} 
 	else 
 	{
-		printf("\033[1;31mHIT BAD TRAP (code = %d)\033[0m\n", top->a0);
+		printf("\033[1;31mHIT BAD TRAP (code = %d)\033[0m\n", CPU_(a0));
 	}	
-	printf("Terminated due to ebreak\n");
-	int return_code = top->a0 == 0 ? 0 : 1;
+	
+		printf("cycles = %lu, instructions = %lu, IPC = %.3f\n", 
+				cycle_count, instr_count, (double)instr_count / (double)cycle_count);
+
+	int return_code = CPU_(a0) == 0 ? 0 : 1;
 	delete top;
 	//tfp->close();
 	return return_code;

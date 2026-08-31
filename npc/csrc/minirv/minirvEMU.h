@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define MEMBASE 0x80000000
+#define MEMBASE 0x30000000
 #define WORD_COUNT 33554432
 #define MEMSIZE (WORD_COUNT * 4)
 

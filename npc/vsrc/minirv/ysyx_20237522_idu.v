@@ -1,4 +1,4 @@
-module idu(
+module ysyx_20237522_idu(
 input[31:0] instr,
 output reg [31:0] imm,
 output reg [4:0] rs1_out,
@@ -11,7 +11,6 @@ output reg re_mem,
 output reg pc_sel,
 output reg alu_sel,
 output reg[1:0] data_sel,
-output reg store_size,
 output is_ebreak
 );
 
@@ -41,7 +40,6 @@ always @(*) begin
 	we_mem = 1'b0;
 	data_sel = 2'b00;
 	pc_sel = 1'b0;
-	store_size = 1'b0;
 	re_mem = 1'b0;
 	if(is_addi) begin
 		rd_out = rd;
@@ -81,7 +79,6 @@ always @(*) begin
 		imm = {{20{imm_s[11]}}, imm_s};
 		alu_sel = 1'b1;
 		we_mem = 1'b1;
-		store_size = is_sb ? 1'b1 : 1'b0;
 	end
 end
 
