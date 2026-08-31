@@ -1,4 +1,4 @@
-module wbu(
+module ysyx_20237522_wbu(
 input [31:0] pc,
 input [31:0] data_alu,
 input [31:0] data_mem,

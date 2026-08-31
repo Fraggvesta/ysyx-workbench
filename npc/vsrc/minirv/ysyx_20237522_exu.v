@@ -1,4 +1,4 @@
-module exu(
+module ysyx_20237522_exu(
 input[31:0] src1,
 input[31:0] src2,
 input[31:0] imm,

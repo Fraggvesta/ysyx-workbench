@@ -1,13 +1,13 @@
-module lsu(
+module ysyx_20237522_lsu(
 input we_mem,
 input re_mem,
 input mem_req,
 input[31:0] addr,
 input[31:0] data_write,
-input store_size,
 input[2:0] funct,
 input[31:0] lsu_rdata,
 
+output[1:0] lsu_size,
 output lsu_reqValid,
 output[31:0] lsu_addr,
 output lsu_wen,
@@ -18,12 +18,12 @@ output reg [31:0] data_mem
 
 wire[1:0] offset = addr[1:0];
 reg[7:0] data_byte;
-
+assign lsu_size = funct[1:0];
 assign lsu_reqValid = mem_req && (we_mem || re_mem);
 assign lsu_addr = addr;
 assign lsu_wen = we_mem;
-assign lsu_wmask = store_size ? (4'h1 << offset) : 4'hf;
-assign lsu_wdata = store_size ? {4{data_write[7:0]}} : data_write;
+assign lsu_wmask = (lsu_size ==	2'b00) ? (4'h1 << offset) : 4'hf;
+assign lsu_wdata = (lsu_size == 2'b00) ? {4{data_write[7:0]}} : data_write;
 
 always @(*) begin
 	
@@ -35,9 +35,14 @@ always @(*) begin
 	endcase
 
 	case(funct)
-	3'b010: data_mem = lsu_rdata;
-	3'b100:	data_mem = {{24{1'b0}}, data_byte};
-	default: data_mem = 32'b0;
+		3'b010: begin
+		 	data_mem = lsu_rdata;
+		end
+		3'b100: begin
+			data_mem = {{24{1'b0}}, data_byte};
+		end
+
+		default: data_mem = 32'b0;
 	
 	endcase
 end

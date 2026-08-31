@@ -1,4 +1,4 @@
-module ifu(
+module ysyx_20237522_ifu(
 input clk,
 input rst,
 input we_mem,
@@ -27,7 +27,7 @@ wire mem_op = re_mem ||	we_mem;
 always @(posedge clk) begin
 	if(rst) begin
 		state <= IDLE;
-		curr_pc <= 32'h80000000;
+		curr_pc <= 32'h30000000;
 		instr_reg <= 32'b0;
 	end else begin
 	if(is_valid) curr_pc <= next_pc;
