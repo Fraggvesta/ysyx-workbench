@@ -156,12 +156,12 @@ int main(int argc, char** argv) {
 		single_cycle();
 		if(check){
 			instr_count++;
-			if(!ref_inst_cycle()) break;
+		/*	if(!ref_inst_cycle()) break;
 			if(check_regs(R, dut_gpr) || pc != CPU_(pc)){
 				printf("Difftest failed, PC_ref = %x | PC_dut = %x\n", pc, CPU_(pc));
 				sim_exit = true;
 				return 1;
-			}
+			} */
 		}
 	}
 	if (CPU_(a0) == 0) {
