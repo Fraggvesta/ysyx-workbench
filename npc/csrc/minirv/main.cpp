@@ -28,6 +28,8 @@ uint64_t get_time(){
 }
 
 extern "C" void flash_read(int32_t addr, int32_t* data){
+	static	int n = 0;
+	if(n++ < 5) {printf("flash read address %x\n", uint32_t(addr));}
 	*data = flashmem[((uint32_t)addr - MEMBASE) >> 2];	
 }
 
