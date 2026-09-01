@@ -2,6 +2,7 @@ TOPNAME ?= SimTop
 NAME ?= minirv
 INC_PATH ?=
 YSYXSOC_HOME ?= $(HOME)/ysyx-workbench/ysyxSoC
+IMG ?= $(YSYXSOC_HOME)/ready-to-run/minirv/hello-minirv-ysyxsoc.bin
 
 VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc --trace \
@@ -41,7 +42,7 @@ all: default
 
 run: $(BIN)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
-	@$(BIN)
+	@$(BIN) $(IMG)
 
 WAVE_FILE = sim_dump.vcd
 

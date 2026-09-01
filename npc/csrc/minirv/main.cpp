@@ -16,6 +16,7 @@ VSimTop* top = NULL;
 //VerilatedVcdC* tfp = NULL;
 
 uint32_t pmem[WORD_COUNT];
+uint32_t flashmem[4194304];
 uint64_t main_time = 0;
 bool sim_exit = false;
 uint32_t uart_status = 0;
@@ -26,6 +27,9 @@ uint64_t get_time(){
 	return cycle_count / 287;
 }
 
+extern "C" void flash_read(int32_t addr, int32_t* data){
+	*data = flashmem[((uint32_t)addr - MEMBASE) >> 2];	
+}
 
 extern "C" int pmem_read(int addr){
 	
@@ -50,7 +54,6 @@ extern "C" int pmem_read(int addr){
 	return pmem[relative_addr];
 }
 
-extern "C" void flash_read(int32_t addr, int32_t *data) { assert(0); }
 
 extern "C" void pmem_write(int addr, int data, uint8_t mask){
 	if (addr == 0x10000000) {  // write to UART
@@ -111,6 +114,8 @@ void load_program(const char* program_file){
 	fread(M, size, 1, fp);
 	fseek(fp, 0, SEEK_SET);
 	fread(pmem, size, 1, fp);
+	fseek(fp, 0, SEEK_SET);
+	fread(flashmem, size, 1, fp);
 	fclose(fp);
 	printf("File successfully loaded\n");
 }
