@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <VSimTop.h>
 #include <unistd.h>
+#include <nvboard.h>
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 #include <VSimTop___024root.h>
@@ -12,6 +13,7 @@
 #include <sys/time.h>
 #define CPU_(x) top->rootp->SimTop__DOT__asic__DOT__soc__DOT__cpu__DOT__core0__DOT__##x
 
+void nvboard_bind_all_pins(VSimTop* top);
 VSimTop* top = NULL;
 //VerilatedVcdC* tfp = NULL;
 
@@ -82,16 +84,18 @@ void single_cycle() {
 	top->clock = 0;
 	top->cpuClock = 0;
 	top->eval();
+	nvboard_update();
 //	tfp->dump(main_time++);
 	
 	bool is_ebreak = CPU_(ebreak);	
 	top->clock = 1;
 	top->cpuClock = 1;
 	top->eval();
-
+	nvboard_update();
 //	tfp->dump(main_time++);
 //	tfp->flush();
-//
+
+
 	if(is_ebreak) sim_exit = true;
 }
 
@@ -146,6 +150,8 @@ int main(int argc, char** argv) {
 
 	//Verilated::traceEverOn(true);
 	top = new VSimTop;
+	nvboard_bind_all_pins(top);
+	nvboard_init();
 	//tfp = new VerilatedVcdC;
 	const uint32_t* dut_gpr = CPU_(rf).data();
 	//top->trace(tfp, 99);	
