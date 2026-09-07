@@ -84,7 +84,6 @@ void single_cycle() {
 	top->clock = 0;
 	top->cpuClock = 0;
 	top->eval();
-	nvboard_update();
 //	tfp->dump(main_time++);
 	
 	bool is_ebreak = CPU_(ebreak);	
