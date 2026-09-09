@@ -1,3 +1,4 @@
+.DEFAULT_GOAL := default
 TOPNAME ?= SimTop
 NAME ?= minirv
 INC_PATH ?=
@@ -5,6 +6,7 @@ YSYXSOC_HOME ?= $(HOME)/ysyx-workbench/ysyxSoC
 NVBOARD_HOME ?= $(HOME)/ysyx-workbench/nvboard
 NXDC_FILES = $(abspath ./constr/simtop.nxdc)
 BUILD_DIR = ./build/$(NAME)
+
 
 SRC_AUTO_BIND = $(abspath $(BUILD_DIR)/auto_bind.cpp)
 $(SRC_AUTO_BIND): $(NXDC_FILES)
@@ -25,7 +27,6 @@ VERILATOR_CFLAGS += -MMD --build -cc --trace \
 
 OBJ_DIR = $(BUILD_DIR)/obj_dir
 BIN = $(BUILD_DIR)/$(NAME)
-
 default: $(BIN)
 
 $(shell mkdir -p $(BUILD_DIR))
