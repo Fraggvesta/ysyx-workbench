@@ -29,7 +29,7 @@ void _trm_init() {
 	volatile uint8_t* dlb2 = (volatile uint8_t*)0x10000001;
 	*dlb2 = 0x00;
 	volatile uint8_t* dlb1 = (volatile uint8_t*)0x10000000;
-	*dlb1 = 0x0E;
+	*dlb1 = 0x0D;
 	*lcr = 0x03;
 	int ret = main(mainargs);
 	halt(ret);

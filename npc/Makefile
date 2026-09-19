@@ -17,7 +17,7 @@ include $(NVBOARD_HOME)/scripts/nvboard.mk
 IMG ?= $(YSYXSOC_HOME)/ready-to-run/minirv/hello-minirv-ysyxsoc.bin
 
 VERILATOR = verilator
-VERILATOR_CFLAGS += -MMD --build -cc --trace \
+VERILATOR_CFLAGS += -MMD --build -cc --trace-fst \
                     -O3 --x-assign fast --x-initial fast --noassert \
 										-I$(YSYXSOC_HOME)/perip/uart16550/rtl \
 										-I$(YSYXSOC_HOME)/perip/spi/rtl \
@@ -64,9 +64,12 @@ wave:
 clean:
 	rm -rf ./build *.vcd *.fst
 
+
+CPU_VSRCS = $(shell find $(abspath ./vsrc/minirv) -name "*.v" -or -name "*.sv")
+
 lint:
 	$(VERILATOR) --lint-only -Wall -Wno-DECLFILENAME \
-		--top-module $(TOPNAME) $(VSRCS)
+		--top-module ysyx_20237522 $(CPU_VSRCS)
 
 .PHONY: default all clean run wave lint
 -include ../Makefile

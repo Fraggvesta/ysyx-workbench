@@ -17,18 +17,21 @@ module ysyx_20237522 (
 	);
 
 		wire [31:0] current_pc, next_pc, imm, rs1_data, rs2_data,
- alu_result, wb_data, data_mem, instr;
+ alu_result, wb_data, data_mem, instr, csr_rdata, csr_wdata;
     wire [4:0] rs1, rs2, rd;
-    wire we_reg, we_mem, re_mem, pc_sel, alu_sel, is_ebreak, mem_req;
-		wire[1:0] data_sel;
-		wire[2:0] funct;
+    wire we_reg, we_mem, re_mem, pc_sel, alu_sel, is_ebreak, mem_req, csr_we, csr_we_valid;
+	wire[1:0] data_sel;
+	wire[2:0] funct;
+    wire[11:0] csr_address;
     reg [31:0] rf [31:0] /* verilator public_flat_rd */;
-		
+    
+
 		wire [31:0] pc /* verilator public_flat_rd */;
 		wire [31:0] ra /* verilator public_flat_rd */;
 		wire [31:0] a0 /* verilator public_flat_rd */;
 		wire ebreak /* verilator public_flat_rd */;
 		wire is_valid /* verilator public_flat_rd */;
+
 
     assign rs1_data = (rs1 == 5'd0) ? 32'd0 : rf[rs1];
     assign rs2_data = (rs2 == 5'd0) ? 32'd0 : rf[rs2];
@@ -59,7 +62,7 @@ module ysyx_20237522 (
         .imm(imm), .rs1_out(rs1), .rs2_out(rs2), .rd_out(rd), .funct(funct),
         .we_reg(we_reg), .we_mem(we_mem), .re_mem(re_mem),
         .pc_sel(pc_sel), .alu_sel(alu_sel), .data_sel(data_sel),
-         .is_ebreak(is_ebreak)
+         .is_ebreak(is_ebreak), .csr_address(csr_address), .csr_we(csr_we)
     );
  
     ysyx_20237522_exu obj_exu (
@@ -80,10 +83,17 @@ module ysyx_20237522 (
     ysyx_20237522_wbu obj_wbu (
         .pc(current_pc), .data_alu(alu_result), .data_mem(data_mem),
         .data_sel(data_sel), .pc_sel(pc_sel),
-        .pc_out(next_pc), .data_out(wb_data)
+        .pc_out(next_pc), .data_out(wb_data),
+        .data_csr(csr_rdata)
     );
 	
-
+    assign csr_we_valid = csr_we && is_valid;
+    assign csr_wdata = csr_rdata | rs1_data;
+    ysyx_20237522_csr obj_csr (
+        .clock(clock), .reset(reset), .csr_address(csr_address),
+        .csr_rdata(csr_rdata), .we(csr_we_valid),
+        .csr_wdata(csr_wdata)
+    );  
 	
 		assign ra = rf[1];
 		assign a0 = rf[10];

@@ -10,7 +10,9 @@ output reg we_mem,
 output reg re_mem,
 output reg pc_sel,
 output reg alu_sel,
+output reg csr_we,
 output reg[1:0] data_sel,
+output [11:0] csr_address,
 output is_ebreak
 );
 
@@ -28,7 +30,9 @@ wire is_lw = (opcode == 7'd3) && (funct == 3'd2);
 wire is_lbu = (opcode == 7'd3) && (funct == 3'd4);
 wire is_sw = (opcode == 7'd35) && (funct == 3'd2);
 wire is_sb = (opcode == 7'd35) && (funct == 3'd0);
+wire is_csrrs = (opcode == 7'd115) && (funct == 3'd2);
 assign is_ebreak = (instr == 32'h00100073);
+assign csr_address = instr[31:20];
 
 always @(*) begin
 	rs1_out = 5'd0;
@@ -41,6 +45,7 @@ always @(*) begin
 	data_sel = 2'b00;
 	pc_sel = 1'b0;
 	re_mem = 1'b0;
+	csr_we = 1'b0;
 	if(is_addi) begin
 		rd_out = rd;
 		rs1_out = rs1;
@@ -79,6 +84,12 @@ always @(*) begin
 		imm = {{20{imm_s[11]}}, imm_s};
 		alu_sel = 1'b1;
 		we_mem = 1'b1;
+	end else if(is_csrrs) begin
+		rs1_out = rs1;
+		rd_out = rd;
+		data_sel = 2'b11;
+		we_reg = 1'b1;
+		csr_we = (rs1 != 5'd0);
 	end
 end
 

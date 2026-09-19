@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <nvboard.h>
 #include <verilated.h>
-#include <verilated_vcd_c.h>
+#include "verilated_fst_c.h"
 #include <VSimTop___024root.h>
 #include "svdpi.h"
 #include "minirvEMU.h"
@@ -15,7 +15,7 @@
 
 void nvboard_bind_all_pins(VSimTop* top);
 VSimTop* top = NULL;
-//VerilatedVcdC* tfp = NULL;
+VerilatedFstC* tfp = NULL;
 
 uint32_t pmem[WORD_COUNT];
 uint32_t flashmem[4194304];
@@ -84,15 +84,14 @@ void single_cycle() {
 	top->clock = 0;
 	top->cpuClock = 0;
 	top->eval();
-//	tfp->dump(main_time++);
+	tfp->dump(main_time++);
 	
 	bool is_ebreak = CPU_(ebreak);	
 	top->clock = 1;
 	top->cpuClock = 1;
 	top->eval();
 	nvboard_update();
-//	tfp->dump(main_time++);
-//	tfp->flush();
+	tfp->dump(main_time++);
 
 
 	if(is_ebreak) sim_exit = true;
@@ -147,20 +146,23 @@ int main(int argc, char** argv) {
 		load_program(argv[1]);
 	}
 
-	//Verilated::traceEverOn(true);
+	Verilated::traceEverOn(true);
 	top = new VSimTop;
 	nvboard_bind_all_pins(top);
 	nvboard_init();
-	//tfp = new VerilatedVcdC;
+	tfp = new VerilatedFstC;
 	const uint32_t* dut_gpr = CPU_(rf).data();
-	//top->trace(tfp, 99);	
-	//tfp->open("sim_dump.vcd");
+	top->trace(tfp, 99);	
+	tfp->open("sim_dump.fst");
 	reset(100);
 	while (!sim_exit) {
 		bool check = CPU_(is_valid);
 		single_cycle();
 		if(check){
 			instr_count++;
+			if(instr_count == 100){
+				tfp->close();
+			}
 		/*	if(!ref_inst_cycle()) break;
 			if(check_regs(R, dut_gpr) || pc != CPU_(pc)){
 				printf("Difftest failed, PC_ref = %x | PC_dut = %x\n", pc, CPU_(pc));
@@ -182,7 +184,6 @@ int main(int argc, char** argv) {
 
 	int return_code = CPU_(a0) == 0 ? 0 : 1;
 	delete top;
-	//tfp->close();
 	return return_code;
 }
 

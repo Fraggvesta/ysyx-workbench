@@ -1,12 +1,19 @@
 #include <am.h>
 
+#define CYCLES_PER_US 287
 void __am_timer_init() {
 }
 
 void __am_timer_uptime(AM_TIMER_UPTIME_T *uptime) {
-  volatile uint32_t lo = *((volatile uint32_t*)0x20000000);
-	volatile uint32_t hi = *((volatile uint32_t*)0x20000004);
-	uptime->us = (uint64_t)hi << 32 | lo;
+	uint32_t lo, hi, hi2;
+	do {
+    asm volatile ("csrr %0, mcycleh" : "=r"(hi));
+    asm volatile ("csrr %0, mcycle"  : "=r"(lo));
+    asm volatile ("csrr %0, mcycleh" : "=r"(hi2));
+  } while (hi != hi2);
+
+  uint64_t cycles = ((uint64_t)hi << 32) | lo;
+  uptime->us = cycles / CYCLES_PER_US;
 }
 
 void __am_timer_rtc(AM_TIMER_RTC_T *rtc) {
