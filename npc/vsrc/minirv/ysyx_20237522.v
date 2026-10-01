@@ -94,7 +94,7 @@ module ysyx_20237522 (
         .csr_rdata(csr_rdata), .we(csr_we_valid),
         .csr_wdata(csr_wdata)
     );  
-	
+        assign pc = current_pc;
 		assign ra = rf[1];
 		assign a0 = rf[10];
 		assign ebreak = is_ebreak && is_valid;		

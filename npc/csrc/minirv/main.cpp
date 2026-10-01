@@ -2,20 +2,31 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
-#include <VSimTop.h>
 #include <unistd.h>
-#include <nvboard.h>
 #include <verilated.h>
 #include "verilated_fst_c.h"
-#include <VSimTop___024root.h>
 #include "svdpi.h"
 #include "minirvEMU.h"
 #include <sys/time.h>
-#define CPU_(x) top->rootp->SimTop__DOT__asic__DOT__soc__DOT__cpu__DOT__core0__DOT__##x
 
+#ifdef SOC
+#include <VSimTop.h>
+#include <VSimTop___024root.h>
+#include <nvboard.h>
+typedef VSimTop VTop;
+#define CPU_(x) top->rootp->SimTop__DOT__asic__DOT__soc__DOT__cpu__DOT__core0__DOT__##x
 void nvboard_bind_all_pins(VSimTop* top);
-VSimTop* top = NULL;
+#else
+#include <Vsim_top.h>
+#include <Vsim_top___024root.h>
+typedef Vsim_top VTop;
+#define CPU_(x) top->rootp->sim_top__DOT__cpu__DOT__##x
+#endif
+
+#define K 4
+VTop* top = NULL;
 VerilatedFstC* tfp = NULL;
+bool tracing = true;
 
 uint32_t pmem[WORD_COUNT];
 uint32_t flashmem[4194304];
@@ -26,21 +37,18 @@ uint64_t cycle_count = 0, instr_count = 0;
 uint32_t timer_lo = 0, timer_hi = 0;
 
 uint64_t get_time(){
-	return cycle_count / 287;
+	return cycle_count / 113;
 }
 
 extern "C" void flash_read(int32_t addr, int32_t* data){
-	static	int n = 0;
-	if(n++ < 5) {printf("flash read address 0x%08x\n", uint32_t(addr));}
 	*data = flashmem[(uint32_t)addr >> 2];	
 }
 
 extern "C" int pmem_read(int addr){
 	
-	if ((uint32_t)addr == 0x10000004) {
-		uart_status = (rand() & 0x7) == 0 ? 1 : 0; // read UART status
-		return uart_status;
-  }
+	if (((uint32_t)addr & 0xfffff000) == 0x10000000) {
+		return ((uint32_t)addr & 7) == 5 ? (0x60u << ((addr & 3) * 8)) : 0;
+	}
 	else if (addr == 0x20000000)
  	{
 			uint64_t t = get_time();
@@ -60,10 +68,13 @@ extern "C" int pmem_read(int addr){
 
 
 extern "C" void pmem_write(int addr, int data, uint8_t mask){
-	if (addr == 0x10000000) {  // write to UART
-    fputc(data & 0xff, stderr);   // defined in stdio.h
-    return;
-  }
+	if (((uint32_t)addr & 0xfffff000) == 0x10000000) {
+		static uint8_t lcr = 0x03;
+		uint8_t byte = ((uint32_t)data >> ((addr & 3) * 8)) & 0xff;
+		if ((addr & 7) == 3) lcr = byte;
+		else if ((addr & 7) == 0 && !(lcr & 0x80)) fputc(byte, stderr);
+		return;
+	}
 	
 	uint32_t relative_addr = ((uint32_t)addr - MEMBASE) >> 2; 
 	if(relative_addr >= WORD_COUNT) {
@@ -78,22 +89,29 @@ extern "C" void pmem_write(int addr, int data, uint8_t mask){
 	}
 }
 
+static uint64_t half_idx = 0;
+
+static void half_cycle(int cpu_level) {
+	#ifdef SOC
+		top->cpuClock = cpu_level;
+		top->clock = ((half_idx + 2*K - 1) % (2*K)) < K;
+	#else
+		top->clock = cpu_level;
+	#endif
+	top->eval();
+	if(tracing) tfp->dump(main_time);
+	main_time++;
+	half_idx++;
+}
 
 void single_cycle() {
 	cycle_count++;
-	top->clock = 0;
-	top->cpuClock = 0;
-	top->eval();
-	tfp->dump(main_time++);
-	
-	bool is_ebreak = CPU_(ebreak);	
-	top->clock = 1;
-	top->cpuClock = 1;
-	top->eval();
-	nvboard_update();
-	tfp->dump(main_time++);
-
-
+	half_cycle(0);
+	bool is_ebreak = CPU_(ebreak);
+	half_cycle(1);
+	#ifdef SOC
+		nvboard_update();
+	#endif
 	if(is_ebreak) sim_exit = true;
 }
 
@@ -147,14 +165,20 @@ int main(int argc, char** argv) {
 	}
 
 	Verilated::traceEverOn(true);
-	top = new VSimTop;
-	nvboard_bind_all_pins(top);
-	nvboard_init();
+	top = new VTop;
+	#ifdef SOC
+		nvboard_bind_all_pins(top);
+		nvboard_init();
+	#endif
 	tfp = new VerilatedFstC;
 	const uint32_t* dut_gpr = CPU_(rf).data();
 	top->trace(tfp, 99);	
 	tfp->open("sim_dump.fst");
-	reset(100);
+	#ifdef SOC
+		reset(100 * K);
+	#else
+		reset(10);
+	#endif
 	while (!sim_exit) {
 		bool check = CPU_(is_valid);
 		single_cycle();
@@ -163,12 +187,14 @@ int main(int argc, char** argv) {
 			if(instr_count == 100){
 				tfp->close();
 			}
-		/*	if(!ref_inst_cycle()) break;
+		#ifndef SOC
+			if(!ref_inst_cycle()) break;
 			if(check_regs(R, dut_gpr) || pc != CPU_(pc)){
 				printf("Difftest failed, PC_ref = %x | PC_dut = %x\n", pc, CPU_(pc));
 				sim_exit = true;
 				return 1;
-			} */
+			}
+		#endif
 		}
 	}
 	if (CPU_(a0) == 0) {

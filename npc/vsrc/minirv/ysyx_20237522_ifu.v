@@ -27,7 +27,11 @@ wire mem_op = re_mem ||	we_mem;
 always @(posedge clk) begin
 	if(rst) begin
 		state <= IDLE;
-		curr_pc <= 32'h30000000;
+		`ifdef SOC
+			curr_pc <= 32'h30000000;
+		`else
+			curr_pc <= 32'h80000000;
+		`endif
 		instr_reg <= 32'b0;
 	end else begin
 	if(is_valid) curr_pc <= next_pc;

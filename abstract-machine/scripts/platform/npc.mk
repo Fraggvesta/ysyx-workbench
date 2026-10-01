@@ -25,8 +25,10 @@ image: image-dep
 	@echo + OBJCOPY "->" $(IMAGE_REL).bin
 	@$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -O binary $(IMAGE).elf $(IMAGE).bin
 
-run: insert-arg
-	$(MAKE) -C $(NPC_HOME)
-	$(NPC_HOME)/build/minirv/minirv $(IMAGE).bin
+NPC_SOC ?= 0
 
+run: insert-arg
+	$(MAKE) -C $(NPC_HOME) SOC=$(NPC_SOC)
+	$(NPC_HOME)/build/$(if $(filter 1,$(NPC_SOC)),soc,npc)/minirv $(IMAGE).bin
+    
 .PHONY: insert-arg

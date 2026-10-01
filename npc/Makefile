@@ -1,28 +1,37 @@
 .DEFAULT_GOAL := default
-TOPNAME ?= SimTop
+SOC ?= 0
+
 NAME ?= minirv
 INC_PATH ?=
 YSYXSOC_HOME ?= $(HOME)/ysyx-workbench/ysyxSoC
 NVBOARD_HOME ?= $(HOME)/ysyx-workbench/nvboard
+
+ifeq ($(SOC),1)
+TOPNAME = SimTop
+BUILD_DIR = ./build/soc
 NXDC_FILES = $(abspath ./constr/simtop.nxdc)
-BUILD_DIR = ./build/$(NAME)
-
-
 SRC_AUTO_BIND = $(abspath $(BUILD_DIR)/auto_bind.cpp)
 $(SRC_AUTO_BIND): $(NXDC_FILES)
 	python3 $(NVBOARD_HOME)/scripts/auto_pin_bind.py $^ $@
 
-
 include $(NVBOARD_HOME)/scripts/nvboard.mk
 IMG ?= $(YSYXSOC_HOME)/ready-to-run/minirv/hello-minirv-ysyxsoc.bin
+else
+TOPNAME = sim_top
+BUILD_DIR = ./build/npc
+endif
 
 VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc --trace-fst \
-                    -O3 --x-assign fast --x-initial fast --noassert \
-										-I$(YSYXSOC_HOME)/perip/uart16550/rtl \
-										-I$(YSYXSOC_HOME)/perip/spi/rtl \
-										--timescale "1ns/1ns" --no-timing \
-										-D__VERILOG__ -DPDK_BEHAV -D__UART_TO_CONSOLE__
+                    -O3 --x-assign fast --x-initial fast --noassert
+ifeq ($(SOC),1)
+VERILATOR_CFLAGS += -DSOC \
+                    -I$(YSYXSOC_HOME)/perip/uart16550/rtl \
+                    -I$(YSYXSOC_HOME)/perip/spi/rtl \
+                    --timescale "1ns/1ns" --no-timing \
+                    -D__VERILOG__ -DPDK_BEHAV -D__UART_TO_CONSOLE__
+CXXFLAGS += -DSOC
+endif
 
 
 OBJ_DIR = $(BUILD_DIR)/obj_dir
@@ -32,9 +41,13 @@ default: $(BIN)
 $(shell mkdir -p $(BUILD_DIR))
 
 # Find source files recursively in vsrc and csrc directories
-VSRCS = $(shell find $(abspath ./vsrc/minirv) -name "*.v" -or -name "*.sv") \
-				$(shell find $(abspath $(YSYXSOC_HOME)/perip) -name "*.v" -or -name "*.sv") \
-				$(abspath $(YSYXSOC_HOME)/ready-to-run/minirv/ElaborateTop.v)
+VSRCS = $(shell find $(abspath ./vsrc/minirv) -name "*.v" -or -name "*.sv")
+ifeq ($(SOC),1)
+VSRCS += $(shell find $(abspath $(YSYXSOC_HOME)/perip) -name "*.v" -or -name "*.sv") \
+$(abspath $(YSYXSOC_HOME)/ready-to-run/minirv/ElaborateTop.v)
+else
+VSRCS += $(abspath ./vsrc/testb/sim_top.v) $(abspath ./vsrc/testb/mem.v)
+endif
 CSRCS = $(shell find $(abspath ./csrc/minirv) -name "*.c" -or -name "*.cc" -or -name "*.cpp")
 CSRCS += $(SRC_AUTO_BIND)
 

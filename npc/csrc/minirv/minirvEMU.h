@@ -4,7 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef SOC
 #define MEMBASE 0x30000000
+#else
+#define MEMBASE 0x80000000
+#endif
 #define WORD_COUNT 33554432
 #define MEMSIZE (WORD_COUNT * 4)
 

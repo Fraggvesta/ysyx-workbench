@@ -93,8 +93,8 @@ bool ref_inst_cycle(){
 		uint32_t rs1 = instr >> 15 & 0x1F;
 		int32_t imm = ((int32_t)instr) >> 20;
 		uint32_t addr = R[rs1] + imm;
-		uint32_t data = (addr == 0x10000004) ? uart_status : M[(addr - MEMBASE) >> 2];
-		uint8_t byte = (data  >> ((addr & 0x3) * 8)) & 0xFF;	
+		uint32_t data = ((addr & 0xfffff000) == 0x10000000) ? (((addr & 7) == 5) ? (0x60u << ((addr & 3) * 8)) : 0)
+        	: M[(addr - MEMBASE) >> 2];		uint8_t byte = (data  >> ((addr & 0x3) * 8)) & 0xFF;	
 		if(rd != 0){
 			R[rd] = byte;
 		}
@@ -106,7 +106,7 @@ bool ref_inst_cycle(){
 		uint32_t rs2 = instr >> 20 & 0x1F;
 		int32_t imm = (((int32_t)(instr & 0xFE000000)) >> 20) | ((instr >> 7) & 0x1F);
 		uint32_t addr = R[rs1] + imm;
-		if(addr != 0x10000000){
+		if((addr & 0xfffff000) != 0x10000000){
 			M[(addr - MEMBASE) >> 2] = R[rs2];
 		}
 
@@ -117,7 +117,7 @@ bool ref_inst_cycle(){
 		int32_t rs2 = instr >> 20 & 0x1F;                                            
 		int32_t imm = (((int32_t)(instr & 0xFE000000)) >> 20) | ((instr >> 7) & 0x1F);
 		uint32_t addr =	R[rs1] + imm;	
-		if(addr != 0x10000000){
+		if((addr & 0xfffff000) != 0x10000000){
 			uint8_t byte = R[rs2] & 0xFF;
 			uint32_t shift = (addr & 0x3) * 8;
 			uint32_t word = (addr - MEMBASE) >> 2;	
