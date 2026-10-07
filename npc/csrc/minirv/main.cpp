@@ -8,6 +8,7 @@
 #include "svdpi.h"
 #include "minirvEMU.h"
 #include <sys/time.h>
+#include "pmem.h"
 
 #ifdef SOC
 #include <VSimTop.h>
@@ -28,7 +29,6 @@ VTop* top = NULL;
 VerilatedFstC* tfp = NULL;
 bool tracing = true;
 
-uint32_t pmem[WORD_COUNT];
 uint32_t flashmem[4194304];
 uint64_t main_time = 0;
 bool sim_exit = false;
@@ -42,51 +42,6 @@ uint64_t get_time(){
 
 extern "C" void flash_read(int32_t addr, int32_t* data){
 	*data = flashmem[(uint32_t)addr >> 2];	
-}
-
-extern "C" int pmem_read(int addr){
-	
-	if (((uint32_t)addr & 0xfffff000) == 0x10000000) {
-		return ((uint32_t)addr & 7) == 5 ? (0x60u << ((addr & 3) * 8)) : 0;
-	}
-	else if (addr == 0x20000000)
- 	{
-			uint64_t t = get_time();
-			timer_lo = t & 0xffffffff;
-			timer_hi = t >> 32;			
-			return timer_lo;
-	}
-  else if (addr == 0x20000004) { return timer_hi; }
-
-	uint32_t relative_addr = ((uint32_t)addr - MEMBASE) >> 2;
-	if(relative_addr >= WORD_COUNT){
-		printf("accessing pmem out of bounds: addr = 0x%08x\n", addr);
-		return 0;
-	}
-	return pmem[relative_addr];
-}
-
-
-extern "C" void pmem_write(int addr, int data, uint8_t mask){
-	if (((uint32_t)addr & 0xfffff000) == 0x10000000) {
-		static uint8_t lcr = 0x03;
-		uint8_t byte = ((uint32_t)data >> ((addr & 3) * 8)) & 0xff;
-		if ((addr & 7) == 3) lcr = byte;
-		else if ((addr & 7) == 0 && !(lcr & 0x80)) fputc(byte, stderr);
-		return;
-	}
-	
-	uint32_t relative_addr = ((uint32_t)addr - MEMBASE) >> 2; 
-	if(relative_addr >= WORD_COUNT) {
-		printf("accessing pmem out of bounds: addr = 0x%08x\n", addr);
-		return;
-	}
-	uint8_t* byte = (uint8_t*)&pmem[relative_addr];
-	for(int i = 0; i < 4; i++){
-		if(mask & (1 << i)){
-			byte[i] = (data >> (i * 8)) & 0xFF;
-		}
-	}
 }
 
 static uint64_t half_idx = 0;
@@ -122,6 +77,7 @@ void reset(int n) {
 	}
 	ref_reset();
 	top->reset = 0;
+	for (int i = 1; i < 32; i++) R[i] = CPU_(rf)[i];
 }
 
 void load_program(const char* program_file){
@@ -135,10 +91,9 @@ void load_program(const char* program_file){
 	fseek(fp, 0, SEEK_SET);
 	fread(M, size, 1, fp);
 	fseek(fp, 0, SEEK_SET);
-	fread(pmem, size, 1, fp);
-	fseek(fp, 0, SEEK_SET);
 	fread(flashmem, size, 1, fp);
 	fclose(fp);
+	pmem_load(program_file);
 	printf("File successfully loaded\n");
 }
 
@@ -148,7 +103,7 @@ bool check_regs(const uint32_t* ref_regs, const uint32_t* dut_gpr){
 		return true;
 	}
 
-	for(int i = 0; i < 32; i++){
+	for(int i = 1; i < 32; i++){
 		if(ref_regs[i] != dut_gpr[i]){
 			printf("Register value at %d is not equal | REF: %x | DUT: %x\n", i, ref_regs[i], dut_gpr[i]);
 			return true;
@@ -186,6 +141,7 @@ int main(int argc, char** argv) {
 			instr_count++;
 			if(instr_count == 100){
 				tfp->close();
+				tracing = false;
 			}
 		#ifndef SOC
 			if(!ref_inst_cycle()) break;
@@ -203,11 +159,12 @@ int main(int argc, char** argv) {
 	else 
 	{
 		printf("\033[1;31mHIT BAD TRAP (code = %d)\033[0m\n", CPU_(a0));
-	}	
+	}
 	
-		printf("cycles = %lu, instructions = %lu, IPC = %.3f\n", 
-				cycle_count, instr_count, (double)instr_count / (double)cycle_count);
+	printf("cycles = %lu, instructions = %lu, IPC = %.3f\n", 
+	cycle_count, instr_count, (double)instr_count / (double)cycle_count);
 
+	if(tracing) tfp->close();
 	int return_code = CPU_(a0) == 0 ? 0 : 1;
 	delete top;
 	return return_code;

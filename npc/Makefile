@@ -6,6 +6,14 @@ INC_PATH ?=
 YSYXSOC_HOME ?= $(HOME)/ysyx-workbench/ysyxSoC
 NVBOARD_HOME ?= $(HOME)/ysyx-workbench/nvboard
 
+NETLIST ?= 0
+ifeq ($(NETLIST),1)
+BUILD_DIR = ./build/netlist
+VSRCS = vsrc/testb/sim_top.v vsrc/testb/mem.v vsrc/netlist/minirv_sim.v <path-to-cell-models>.v
+VFLAGS += --timescale "1ns/1ns" --no-timing -D__VERILATOR__ -Dfunctional -Wno-fatal -DNETLIST
+CXXFLAGS += -DNETLIST
+endif
+
 ifeq ($(SOC),1)
 TOPNAME = SimTop
 BUILD_DIR = ./build/soc

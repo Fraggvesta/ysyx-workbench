@@ -36,15 +36,9 @@ module ysyx_20237522 (
     assign rs1_data = (rs1 == 5'd0) ? 32'd0 : rf[rs1];
     assign rs2_data = (rs2 == 5'd0) ? 32'd0 : rf[rs2];
 
-	  always @(posedge clock) begin
-			if(reset) begin
-				for(int i = 0; i < 32; i++) begin
-					rf[i] <= 32'd0;
-				end
-			end else begin
-				 	if (we_reg && is_valid  && (rd != 5'd0)) rf[rd] <= wb_data;
-				end
-		end
+	always @(posedge clock) begin
+		if (we_reg && is_valid  && (rd != 5'd0)) rf[rd] <= wb_data;
+	end
 
 		ysyx_20237522_ifu obj_ifu (
         .clk(clock), .rst(reset),

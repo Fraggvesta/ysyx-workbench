@@ -32,7 +32,6 @@ always @(posedge clk) begin
 		`else
 			curr_pc <= 32'h80000000;
 		`endif
-		instr_reg <= 32'b0;
 	end else begin
 	if(is_valid) curr_pc <= next_pc;
 	case(state)
