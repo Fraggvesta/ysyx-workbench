@@ -1,18 +1,12 @@
 .DEFAULT_GOAL := default
 SOC ?= 0
+NETLIST ?= 0
 
 NAME ?= minirv
 INC_PATH ?=
 YSYXSOC_HOME ?= $(HOME)/ysyx-workbench/ysyxSoC
 NVBOARD_HOME ?= $(HOME)/ysyx-workbench/nvboard
 
-NETLIST ?= 0
-ifeq ($(NETLIST),1)
-BUILD_DIR = ./build/netlist
-VSRCS = vsrc/testb/sim_top.v vsrc/testb/mem.v vsrc/netlist/minirv_sim.v <path-to-cell-models>.v
-VFLAGS += --timescale "1ns/1ns" --no-timing -D__VERILATOR__ -Dfunctional -Wno-fatal -DNETLIST
-CXXFLAGS += -DNETLIST
-endif
 
 ifeq ($(SOC),1)
 TOPNAME = SimTop
@@ -26,7 +20,7 @@ include $(NVBOARD_HOME)/scripts/nvboard.mk
 IMG ?= $(YSYXSOC_HOME)/ready-to-run/minirv/hello-minirv-ysyxsoc.bin
 else
 TOPNAME = sim_top
-BUILD_DIR = ./build/npc
+BUILD_DIR = ./build/$(if $(filter 1,$(NETLIST)),netlist,npc)
 endif
 
 VERILATOR = verilator
@@ -41,6 +35,10 @@ VERILATOR_CFLAGS += -DSOC \
 CXXFLAGS += -DSOC
 endif
 
+ifeq ($(NETLIST),1)
+VERILATOR_CFLAGS += --timescale "1ns/1ns" --no-timing -D__VERILATOR__ -Dfunctional -Wno-fatal -DNETLIST
+CXXFLAGS += -DNETLIST
+endif
 
 OBJ_DIR = $(BUILD_DIR)/obj_dir
 BIN = $(BUILD_DIR)/$(NAME)
@@ -49,7 +47,16 @@ default: $(BIN)
 $(shell mkdir -p $(BUILD_DIR))
 
 # Find source files recursively in vsrc and csrc directories
+ifeq ($(NETLIST),1)
+STD_CELL = /home/ramir/icsprout55-pdk/IP/STD_cell/ics55_LLSC_H7C_V1p10C100
+VSRCS = $(abspath ./vsrc/netlist/minirv_sim.v) \
+        $(STD_CELL)/ics55_LLSC_H7CL/verilog/ics55_LLSC_H7CL.v \
+        $(STD_CELL)/ics55_LLSC_H7CR/verilog/ics55_LLSC_H7CR.v \
+		$(STD_CELL)/ics55_LLSC_H7CH/verilog/ics55_LLSC_H7CH.v
+else
 VSRCS = $(shell find $(abspath ./vsrc/minirv) -name "*.v" -or -name "*.sv")
+endif
+
 ifeq ($(SOC),1)
 VSRCS += $(shell find $(abspath $(YSYXSOC_HOME)/perip) -name "*.v" -or -name "*.sv") \
 $(abspath $(YSYXSOC_HOME)/ready-to-run/minirv/ElaborateTop.v)

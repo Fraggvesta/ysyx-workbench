@@ -27,7 +27,11 @@ typedef Vsim_top VTop;
 #define K 4
 VTop* top = NULL;
 VerilatedFstC* tfp = NULL;
+#ifdef NETLIST
+bool tracing = false;
+#else
 bool tracing = true;
+#endif
 
 uint32_t flashmem[4194304];
 uint64_t main_time = 0;
@@ -62,12 +66,18 @@ static void half_cycle(int cpu_level) {
 void single_cycle() {
 	cycle_count++;
 	half_cycle(0);
+#ifndef NETLIST
 	bool is_ebreak = CPU_(ebreak);
+#endif
 	half_cycle(1);
 	#ifdef SOC
 		nvboard_update();
 	#endif
+#ifdef NETLIST
+	if(Verilated::gotFinish()) sim_exit = true;
+#else
 	if(is_ebreak) sim_exit = true;
+#endif
 }
 
 void reset(int n) {
@@ -77,7 +87,9 @@ void reset(int n) {
 	}
 	ref_reset();
 	top->reset = 0;
+#ifndef NETLIST
 	for (int i = 1; i < 32; i++) R[i] = CPU_(rf)[i];
+#endif
 }
 
 void load_program(const char* program_file){
@@ -126,7 +138,9 @@ int main(int argc, char** argv) {
 		nvboard_init();
 	#endif
 	tfp = new VerilatedFstC;
+#ifndef NETLIST
 	const uint32_t* dut_gpr = CPU_(rf).data();
+#endif
 	top->trace(tfp, 99);	
 	tfp->open("sim_dump.fst");
 	#ifdef SOC
@@ -135,6 +149,9 @@ int main(int argc, char** argv) {
 		reset(10);
 	#endif
 	while (!sim_exit) {
+#ifdef NETLIST
+		single_cycle();
+#else
 		bool check = CPU_(is_valid);
 		single_cycle();
 		if(check){
@@ -152,15 +169,15 @@ int main(int argc, char** argv) {
 			}
 		#endif
 		}
+#endif
 	}
-	if (CPU_(a0) == 0) {
-		printf("\033[1;32mHIT GOOD TRAP\033[0m\n");
-	} 
-	else 
-	{
-		printf("\033[1;31mHIT BAD TRAP (code = %d)\033[0m\n", CPU_(a0));
-	}
-	
+
+#ifdef NETLIST
+	printf("cycles = %lu\n", cycle_count);
+	if(tracing) tfp->close();
+	delete top;
+	return 0;
+#else
 	printf("cycles = %lu, instructions = %lu, IPC = %.3f\n", 
 	cycle_count, instr_count, (double)instr_count / (double)cycle_count);
 
@@ -168,5 +185,6 @@ int main(int argc, char** argv) {
 	int return_code = CPU_(a0) == 0 ? 0 : 1;
 	delete top;
 	return return_code;
+#endif
 }
 

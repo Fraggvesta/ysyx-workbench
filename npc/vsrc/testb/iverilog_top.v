@@ -17,12 +17,11 @@ end
 always @(posedge clock) begin
   if (!reset) begin
     cycles = cycles + 1;
+`ifndef NETLIST
     if (top.cpu.ebreak) begin
-      if (top.cpu.a0 == 0) $display("HIT GOOD TRAP");
-      else $display("HIT BAD TRAP (code = %0d)", top.cpu.a0);
-      $display("cycles = %0d", cycles);
       $finish;
     end
+`endif
     if (cycles == 100000000) begin
       $display("TIMEOUT");
       $finish;
