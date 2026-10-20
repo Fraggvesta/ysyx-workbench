@@ -19,6 +19,8 @@ void putch(char ch) {
 }
 
 void halt(int code) {
+	const char *s = code == 0 ? "HIT GOOD TRAP\n" : "HIT BAD TRAP\n";
+	while (*s) putch(*s++);
 	asm volatile("mv a0, %0; ebreak" : :"r"(code));
 	while (1);
 }
