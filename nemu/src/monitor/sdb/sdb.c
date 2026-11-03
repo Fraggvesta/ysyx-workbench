@@ -14,6 +14,7 @@
 ***************************************************************************************/
 
 #include <isa.h>
+#include <memory/vaddr.h>
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -50,10 +51,64 @@ static int cmd_c(char *args) {
 
 static int cmd_q(char *args) {
   nemu_state.state = NEMU_QUIT;
-	return -1;
+  return -1;
 }
 
 static int cmd_help(char *args);
+
+static int cmd_si(char *args) {
+  char *arg = strtok(NULL, " ");
+  int i;
+  if (arg == NULL) {
+    cpu_exec(1);
+    return 0;
+  }
+  else {
+    sscanf(arg, "%d", &i);
+    cpu_exec(i);
+    return 0;
+  }
+}
+
+static int cmd_info(char *args) {
+  char *arg = strtok(NULL, " ");
+  if (arg == NULL) {
+    printf("Invalid argument check the valid arguments using command: help\n");
+    return 0;
+  }
+
+  if (strcmp(arg, "r") == 0) {
+    isa_reg_display();
+  }
+  return 0;
+}
+
+
+static int cmd_x(char *args){
+  char *arg = strtok(NULL, " ");
+  if (arg == NULL) {
+    printf("Invalid argument check the valid arguments using command: help\n");
+    return 0;   
+  }
+
+  int i;
+  sscanf(arg, "%d", &i);
+  arg = strtok(NULL, " ");
+  
+  if (arg == NULL) {
+    printf("Invalid argument check the valid arguments using command: help\n");
+    return 0;
+  }
+
+  uint32_t mem_addr;
+  sscanf(arg, "%x", &mem_addr);
+
+  for(int j = 0; j<i; j++){
+    uint32_t addr = mem_addr + (j * 4);
+    printf("0x%08x: 0x%08x\n", addr, vaddr_read(addr, 4));
+  }
+  return 0; 
+}
 
 static struct {
   const char *name;
@@ -63,10 +118,10 @@ static struct {
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
-	{ "si", "Lets the program pause after executing N instructions using single step execution, When N is not given, the default is 1", cmd_si},
-	{ "info", "Print register status or print watchpoint information", cmd_info},
-	/* TODO: Add more commands */
-
+  { "si", "Lets the program pause after executing N instructions using single step execution, When N is not given, the default is 1", cmd_si},
+  { "info", "Print register status or print watchpoint information", cmd_info},
+  { "x", "Finds the value of the expression EXPR, uses the result as the starting memory address, and outputs consecutive N 4 bytes in hexadecimal.", cmd_x},
+  /* TODO: Add more commands */
 };
 
 #define NR_CMD ARRLEN(cmd_table)
@@ -94,33 +149,6 @@ static int cmd_help(char *args) {
   return 0;
 }
 
-static int cmd_si(char *args) {
-	char *arg = strtok(NULL, " ");
-	int i;
-
-	if (arg == NULL) {
-		cpu_exec(1);
-		return 0;
-	}
-	else {
-		sscanf(arg, "%d", &i);
-		cpu_exec(i);
-		return 0;
-	}
-}
-
-static int cmd_info(char *args) {
-	char *arg = strtok(NULL, " ");
-	if(arg == NULL){
-		printf("Invalid argument check the valid argument using: help\n");
-	}
-
-	if (strcmp(arg, "r") == 0) {
-		isa_reg_display();
-	}
-
-	return 0;
-}
 
 void sdb_set_batch_mode() {
   is_batch_mode = true;
