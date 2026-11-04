@@ -64,7 +64,11 @@ static int cmd_si(char *args) {
     return 0;
   }
   else {
-    sscanf(arg, "%d", &i);
+    if (sscanf(arg, "%d", &i) != 1) {
+      printf("Invalid argument\n");
+      return 0;
+    }
+
     cpu_exec(i);
     return 0;
   }
@@ -73,13 +77,17 @@ static int cmd_si(char *args) {
 static int cmd_info(char *args) {
   char *arg = strtok(NULL, " ");
   if (arg == NULL) {
-    printf("Invalid argument check the valid arguments using command: help\n");
+    printf("Invalid argument\n");
     return 0;
   }
 
   if (strcmp(arg, "r") == 0) {
     isa_reg_display();
   }
+  else{
+    printf("Invalid argument\n");
+  }
+
   return 0;
 }
 
@@ -87,21 +95,28 @@ static int cmd_info(char *args) {
 static int cmd_x(char *args){
   char *arg = strtok(NULL, " ");
   if (arg == NULL) {
-    printf("Invalid argument check the valid arguments using command: help\n");
+    printf("Invalid argument\n");
     return 0;   
   }
 
   int i;
-  sscanf(arg, "%d", &i);
+  if (sscanf(arg, "%d", &i) != 1) {
+    printf("Invalid argument\n");
+    return 0;
+  }
+
   arg = strtok(NULL, " ");
   
   if (arg == NULL) {
-    printf("Invalid argument check the valid arguments using command: help\n");
+    printf("Invalid argument\n");
     return 0;
   }
 
   uint32_t mem_addr;
-  sscanf(arg, "%x", &mem_addr);
+  if (sscanf(arg, "%x", &mem_addr) != 1) {
+    printf("Invalid argument\n");
+    return 0;
+  }
 
   for(int j = 0; j<i; j++){
     uint32_t addr = mem_addr + (j * 4);
@@ -119,7 +134,7 @@ static struct {
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
   { "si", "Lets the program pause after executing N instructions using single step execution, When N is not given, the default is 1", cmd_si},
-  { "info", "Print register status or print watchpoint information", cmd_info},
+  { "info", " Print register status or print watchpoint information", cmd_info},
   { "x", "Finds the value of the expression EXPR, uses the result as the starting memory address, and outputs consecutive N 4 bytes in hexadecimal.", cmd_x},
   /* TODO: Add more commands */
 };
