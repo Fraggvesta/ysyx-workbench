@@ -1,17 +1,17 @@
 /***************************************************************************************
-* Copyright (c) 2014-2024 Zihao Yu, Nanjing University
-*
-* NEMU is licensed under Mulan PSL v2.
-* You can use this software according to the terms and conditions of the Mulan PSL v2.
-* You may obtain a copy of Mulan PSL v2 at:
-*          http://license.coscl.org.cn/MulanPSL2
-*
-* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-* EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-* MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-*
-* See the Mulan PSL v2 for more details.
-***************************************************************************************/
+ * Copyright (c) 2014-2024 Zihao Yu, Nanjing University
+ *
+ * NEMU is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ *
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ *
+ * See the Mulan PSL v2 for more details.
+ ***************************************************************************************/
 
 #include <isa.h>
 
@@ -36,15 +36,15 @@ static struct rule {
    */
 
   {" +", TK_NOTYPE},    // spaces
-	{"0[xX][0-9a-fA-F]+"}, TK_HEX // hexadecimal
-	{"[0-9]+", TK_DEC},		// decimal
-	{"\\(", '('},					// left bracket
-	{"\\)", ')'},					// right bracket
-	{"\\*", '*'},					// multiply
-	{"\\/", '/'},					// divide
+  {"0[xX][0-9a-fA-F]+", TK_HEX}, // hexadecimal
+  {"[0-9]+", TK_DEC},		// decimal
+  {"\\(", '('},					// left bracket
+  {"\\)", ')'},					// right bracket
+  {"\\*", '*'},					// multiply
+  {"\\/", '/'},					// divide
   {"\\+", '+'},         // plus
-	{"\\-", '-'},					// minus
- 	{"==", TK_EQ},        // equal
+  {"\\-", '-'},					// minus
+  {"==", TK_EQ},        // equal
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -84,6 +84,11 @@ static bool make_token(char *e) {
   nr_token = 0;
 
   while (e[position] != '\0') {
+    if(nr_token >= ARRLEN(tokens)){
+      printf("too many tokens (max %d)\n", (int)ARRLEN(tokens));
+      return false;
+    }
+
     /* Try all rules one by one. */
     for (i = 0; i < NR_REGEX; i ++) {
       if (regexec(&re[i], e + position,	1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
@@ -99,14 +104,27 @@ static bool make_token(char *e) {
          * to record the token in the array `tokens'. For certain types
          * of tokens, some extra actions should be performed.
          */
-
+        
         switch (rules[i].token_type) {
-					case TK_NOTYPE: break;
-					case TK_HEX: tokens[nr_token].type = rules[i].token_type;
-											 strncpy(tokens[nr_token].str, substr_start, substr_len);
-											 nr_token++;
-											 break;
-          default: TODO();
+          case TK_NOTYPE: break;
+          case TK_DEC:
+          case TK_HEX: if(substr_len >= sizeof(tokens[0].str)){
+                          printf("token is too long: %.*s\n", substr_len, substr_start);
+                          return false;
+                       }
+
+                       tokens[nr_token].type = rules[i].token_type;
+                       strncpy(tokens[nr_token].str, substr_start, substr_len);
+                       nr_token++;
+                       break;
+          case '(':
+          case ')':
+          case '*':
+          case '/':
+          case '+':
+          case '-': tokens[nr_token].type = rules[i].token_type;
+                    nr_token++;
+                    break;
         }
 
         break;
@@ -122,6 +140,96 @@ static bool make_token(char *e) {
   return true;
 }
 
+static bool check_parentheses(int p, int q){
+  if(tokens[p].type == '(' && tokens[q].type == ')'){
+    p++;
+    q--;
+    int top = 0;
+
+    for (; p <= q; p++) {
+      if (tokens[p].type == '(') {
+        top++;
+      }
+      else if (tokens[p].type == ')' && top > 0) {
+        top--;
+      }
+      else if(tokens[p].type == ')'){
+        return false;
+      }
+    }
+
+    return top == 0;
+  }
+
+  return false;
+}
+
+static unsigned int prec(char type) {
+  if(type == '+' || type == '-'){
+    return 0;
+  }
+  else if(type == '*' || type == '/'){
+    return 1;
+  }
+
+  return -1;
+}
+
+static word_t eval(int p, int q) {
+  if (p > q) {
+    /* Bad expression */
+    *success = false;
+    return 0;
+  }
+  else if (p == q) {
+    /* Single token.
+     * For now this token should be a number.
+     * Return the value of the number.
+     */
+    word_t result;
+    sscanf(tokens[p].str, "%d", &result);
+    return result;
+  }
+  else if (check_parentheses(p, q) == true) {
+    /* The expression is surrounded by a matched pair of parentheses.
+     * If that is the case, just throw away the parentheses.
+     */
+    return eval(p + 1, q - 1);
+  }
+  else {
+    /* We should do more things here. */
+    int depth = 0;
+    char op = '0';
+    int op_index = 0;
+    for (int i = p; i <= q; i++) {
+      if (depth < 0) {
+        *success = false;
+        return 0;
+      }
+
+      if (tokens[i].type == '(') {
+        depth++;
+      }
+      else if (tokens[i].type == ')') {
+        depth--;
+      }
+      else if (prec(tokensp[i].type) <= prec(op) && depth == 0) {
+        op = tokens[i].type;
+        op_index = i;
+      }
+    }
+
+    word_t val1 = eval(p, op_index - 1);
+    word_t val2 = eval(op_index + 1, q);
+
+    switch (op_type) {
+      case '+': return val1 + val2;
+      case '-': return val1 - val2;
+      case '*': return val1 * val2;
+      case '/': return va1 / val2;
+      default: assert(0);
+  }
+}
 
 word_t expr(char *e, bool *success) {
   if (!make_token(e)) {
@@ -130,7 +238,4 @@ word_t expr(char *e, bool *success) {
   }
 
   /* TODO: Insert codes to evaluate the expression. */
-  TODO();
-
-  return 0;
 }
